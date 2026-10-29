@@ -42,6 +42,7 @@ namespace Erp.Repository.Data
         public DbSet<ChargeDTO> Charge { get; set; }
         public DbSet<SupplierDTO> Supplier { get; set; }
         public DbSet<ItemDTO> Item { get; set; }
+        public DbSet<StyleDTO> Style { get; set; }
 
         public DbSet<ColorDTO> Color { get; set; }
         public DbSet<SizeDTO> Size { get; set; }
@@ -115,6 +116,7 @@ namespace Erp.Repository.Data
             modelBuilder.Entity<ColorDTO>();
             modelBuilder.Entity<SizeDTO>();
             modelBuilder.Entity<ItemDTO>();
+            modelBuilder.Entity<StyleDTO>();
             modelBuilder.Entity<QuotationMasterDTO>();
             modelBuilder.Entity<QuotationDetailDTO>();
             modelBuilder.Entity<JobOrderMasterDTO>();

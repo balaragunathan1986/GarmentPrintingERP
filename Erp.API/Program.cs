@@ -135,6 +135,7 @@ builder.Services.AddTransient<IProductGroupService, ProductGroupService>();
 builder.Services.AddTransient<IChargeService, ChargeService>();
 builder.Services.AddTransient<ISupplierService, SupplierService>();
 builder.Services.AddTransient<IItemService, ItemService>();
+builder.Services.AddTransient<IStyleService, StyleService>();
 builder.Services.AddTransient<IColorService, ColorService>();
 builder.Services.AddTransient<ISizeService, SizeService>();
 #endregion
@@ -180,6 +181,7 @@ builder.Services.AddTransient<ISupplierRepository, SupplierRepository>();
 builder.Services.AddTransient<IColorRepository, ColorRepository>();
 builder.Services.AddTransient<ISizeRepository, SizeRepository>();
 builder.Services.AddTransient<IItemRepository, ItemRepository>();
+builder.Services.AddTransient<IStyleRepository, StyleRepository>();
 #endregion 
 #region Production Repository
 builder.Services.AddTransient<IJobReceiptRepository, JobReceiptRepository>();
