@@ -1693,3 +1693,33 @@ BEGIN
     );
 
 END;
+
+If not exists(select * from sys.objects where name='Style' and type='U')
+Begin
+
+
+CREATE TABLE [dbo].[Style](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[StyleId]  UNIQUEIDENTIFIER NOT NULL,
+	[Style] [varchar](40) NOT NULL,
+	[Item_Id] UNIQUEIDENTIFIER NOT NULL,
+	[Rate] [numeric](15, 5) NOT NULL,
+	IsActive bit DEFAULT 1 NOT NULL,
+	IsDeleted bit DEFAULT 0 NOT NULL,
+	CreatedBy varchar(max) NOT NULL,
+	CreatedAt Date DEFAULT GETDATE(),
+	UpdatedBy varchar(max),
+	UpdatedAt Date DEFAULT NULL,
+	DeletedBy varchar(max),
+	DeletedAt Date  DEFAULT NULL
+
+		CONSTRAINT FK_Style_Item
+			FOREIGN KEY (Item_Id)
+			REFERENCES Item(Item_Id)
+)
+End
+
+IF COL_LENGTH('dbo.Quotation_Master', 'Style_Id') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Quotation_Master] ADD [Style_Id] UNIQUEIDENTIFIER NULL;
+END

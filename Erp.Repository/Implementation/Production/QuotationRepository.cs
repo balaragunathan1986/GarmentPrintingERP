@@ -42,6 +42,7 @@ namespace Erp.Repository.Implementation.Production
                     Quotation_Number = quotation.Quotation_Number,
                     Company_Id = quotation.Company_Id,
                     Supplier_Id = quotation.Supplier_Id,
+                    Style_Id = quotation.Style_Id,
                     Quotation_Date = quotation.Quotation_Date,
                     Commit = quotation.Commit,
                     Cancel = quotation.Cancel,
@@ -74,6 +75,7 @@ namespace Erp.Repository.Implementation.Production
                     Quotation_Number = master.Quotation_Number,
                     Company_Id = master.Company_Id,
                     Supplier_Id = master.Supplier_Id,
+                    Style_Id = master.Style_Id,
                     Quotation_Date = master.Quotation_Date,
                     Commit = master.Commit,
                     Cancel = master.Cancel,
@@ -147,6 +149,7 @@ namespace Erp.Repository.Implementation.Production
                     Quotation_Number = model.Quotation_Number,
                     Company_Id = model.Company_Id,
                     Supplier_Id = model.Supplier_Id,
+                    Style_Id = model.Style_Id,
                     Quotation_Date = model.Quotation_Date,
                     Commit = model.Commit,
                     Cancel = model.Cancel,
@@ -204,6 +207,7 @@ namespace Erp.Repository.Implementation.Production
                 quotation.Quotation_Number = model.Quotation_Number;
                 quotation.Company_Id = model.Company_Id;
                 quotation.Supplier_Id = model.Supplier_Id;
+                quotation.Style_Id = model.Style_Id;
                 quotation.Quotation_Date = model.Quotation_Date;
                 quotation.Commit = model.Commit;
                 quotation.Cancel = model.Cancel;

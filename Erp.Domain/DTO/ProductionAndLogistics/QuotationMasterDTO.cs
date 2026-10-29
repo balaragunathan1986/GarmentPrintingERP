@@ -13,6 +13,7 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public string Quotation_Number { get; set; } = string.Empty;
         public int Company_Id { get; set; }
         public int Supplier_Id { get; set; }
+        public Guid? Style_Id { get; set; }
         public DateTime? Quotation_Date { get; set; }
         public bool? Commit { get; set; }
         public bool? Cancel { get; set; }
