@@ -1,0 +1,1695 @@
+﻿
+
+
+CREATE TABLE Color (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Color_Id UNIQUEIDENTIFIER NOT NULL,
+    Color_Name NVARCHAR(MAX) NULL,
+    Color_Description NVARCHAR(MAX) NULL,
+    Color_Code NVARCHAR(MAX) NULL,
+    Pantone_Code NVARCHAR(MAX) NULL,
+    IsActive BIT NOT NULL DEFAULT 0,
+    IsDeleted BIT NOT NULL DEFAULT 0,
+    CreatedBy NVARCHAR(MAX) NULL,
+    CreatedAt DATETIME2 NULL,
+    UpdatedBy NVARCHAR(MAX) NULL DEFAULT '',
+    UpdatedAt DATETIME2 NULL,
+    DeletedBy NVARCHAR(MAX) NULL DEFAULT '',
+    DeletedAt DATETIME2 NULL
+);
+
+Go
+
+CREATE TABLE Size (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    SIze_Id UNIQUEIDENTIFIER NOT NULL,
+    Size_Name NVARCHAR(MAX) NULL,
+    Size_Description NVARCHAR(MAX) NULL,
+    Size_Code NVARCHAR(MAX) NULL,
+    Size_Group_Id UNIQUEIDENTIFIER NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 0,
+    IsDeleted BIT NOT NULL DEFAULT 0,
+    CreatedBy NVARCHAR(MAX) NULL,
+    CreatedAt DATETIME2 NULL,
+    UpdatedBy NVARCHAR(MAX) NULL DEFAULT '',
+    UpdatedAt DATETIME2 NULL,
+    DeletedBy NVARCHAR(MAX) NULL DEFAULT '',
+    DeletedAt DATETIME2 NULL
+);
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Quotation_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].Quotation_Master
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [Quotation_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Billing Number
+        [Quotation_Number] NVARCHAR(15) NOT NULL,
+    
+        -- Company
+        [Company_Id] INT NOT NULL,
+
+        -- Supplier
+        [Supplier_Id] INT NOT NULL,
+
+        [Quotation_Date] DATETIME NULL,
+		[Commit] [bit] NULL,
+	    [Cancel] [bit] NULL,
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+		ApprovedBy INT NULL,
+		ApprovedDate DATETIME NULL,
+	    ApprovalStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
+		Remarks NVARCHAR(500) NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_Quotation_Master]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Quotation_Master_Id]
+            UNIQUE ([Quotation_Id]),
+
+        -- Company FK
+        CONSTRAINT [FK_Quotation_Master_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company]([Id]),
+
+        -- Supplier FK
+        CONSTRAINT [FK_Quotation_Master_Supplier]
+            FOREIGN KEY ([Supplier_Id])
+            REFERENCES [dbo].[Supplier]([Id])
+    );
+
+END;
+
+ALTER TABLE [dbo].[Color]
+ADD CONSTRAINT [UQ_Color_color_Id]
+UNIQUE ([Color_Id]);
+
+ALTER TABLE [dbo].[size]
+ADD CONSTRAINT [UQ_Size_Size_Id]
+UNIQUE ([Size_Id]);
+
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Quotation_Details'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].Quotation_Details
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+		[Quotation_Details_Id] [uniqueidentifier] NOT NULL,
+		[Quotation_Id] [uniqueidentifier] NOT NULL,	
+		ItemID [uniqueidentifier] NOT NULL,
+		ColorID [uniqueidentifier] NOT NULL,
+		SizeID [uniqueidentifier] NOT NULL,
+		UomID [uniqueidentifier] NOT NULL,
+		Qty DECIMAL(18,3) NULL,
+		Rate DECIMAL(18,4) NULL,
+		AppRate DECIMAL(18,4) NULL,
+		Remarks NVARCHAR(500) NULL,
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,	
+
+        -- Primary Key
+           -- Primary Key
+        CONSTRAINT [PK_Quotation_Details]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Quotation_Details_Id]
+            UNIQUE ([Quotation_Details_Id]),
+
+        -- Bill Receipt FK
+
+			  CONSTRAINT [FK_Quotation_Details_Master]
+            FOREIGN KEY ([Quotation_Id])
+            REFERENCES [dbo].[Quotation_Master]([Quotation_Id]),
+
+			  CONSTRAINT [FK_Quotation_Item_Details]
+            FOREIGN KEY ([ItemID])
+            REFERENCES [dbo].[Item]([Item_ID]),
+
+			
+			  CONSTRAINT [FK_Quotation_Color_Details]
+            FOREIGN KEY ([ColorID])
+            REFERENCES [dbo].[Color]([Color_Id]),
+
+			
+			  CONSTRAINT [FK_Quotation_Size_Details]
+            FOREIGN KEY ([SizeId])
+            REFERENCES [dbo].[Size]([Size_Id]),
+
+			 CONSTRAINT [FK_Quotation_Uom_Details]
+            FOREIGN KEY ([UomId])
+            REFERENCES [dbo].[Unit_Of_Measurement]([Uom_Id])
+    );
+
+END;
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'JobOrder_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].JobOrder_Master
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        [JobOrder_Id] UNIQUEIDENTIFIER NOT NULL,
+        [JobOrder_Number] NVARCHAR(15) NOT NULL,
+        [Job_Order_Ref] [varchar](15) NULL,
+        [Quotation_Id] UNIQUEIDENTIFIER NULL,
+        [Company_Id] INT NOT NULL,
+        [Supplier_Id] INT NOT NULL,
+        [JobOrder_Date] DATETIME NULL,
+        [Currency] NVARCHAR(50) NULL,
+        [ExcessPer] [numeric](5, 2) NULL,
+        [Rate] [numeric](15, 5) NULL,
+        [JobOrdType] [varchar](1) NULL,
+        [Commit] [bit] NULL,
+        [Cancel] [bit] NULL,
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME NULL,
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [UpdatedAt] DATETIME NULL,
+        [DeletedBy] NVARCHAR(100) NULL,
+        [DeletedAt] DATETIME NULL,
+        ApprovedBy INT NULL,
+        ApprovedDate DATETIME NULL,
+        ApprovalStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        Remarks NVARCHAR(500) NULL,
+
+        CONSTRAINT [PK_JobOrder_Master] PRIMARY KEY CLUSTERED ([Id]),
+        CONSTRAINT [UQ_JobOrder_Master_Id] UNIQUE ([JobOrder_Id]),
+        CONSTRAINT [FK_JobOrder_Master_Company] FOREIGN KEY ([Company_Id]) REFERENCES [dbo].[Company]([Id]),
+        CONSTRAINT [FK_JobOrder_Master_quotation] FOREIGN KEY ([Quotation_Id]) REFERENCES [dbo].[Quotation_Master]([Quotation_Id]),
+        CONSTRAINT [FK_JobOrder_Master_Supplier] FOREIGN KEY ([Supplier_Id]) REFERENCES [dbo].[Supplier]([Id])
+    );
+
+END;
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'JobOrder_Details'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].JobOrder_Details
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        [JobOrder_Details_Id] [uniqueidentifier] NOT NULL,
+        [JobOrder_Id] [uniqueidentifier] NOT NULL,
+        ItemID [uniqueidentifier] NOT NULL,
+        ColorID [uniqueidentifier] NOT NULL,
+        SizeID [uniqueidentifier] NOT NULL,
+        UomID [uniqueidentifier] NOT NULL,
+        Qty DECIMAL(18,3),
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME NULL,
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [UpdatedAt] DATETIME NULL,
+        [DeletedBy] NVARCHAR(100) NULL,
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_JobOrder_Details] PRIMARY KEY CLUSTERED ([Id]),
+        CONSTRAINT [UQ_JobOrder_Details_Id] UNIQUE ([JobOrder_Details_Id]),
+        CONSTRAINT [FK_JobOrder_Details_Master] FOREIGN KEY ([JobOrder_Id]) REFERENCES [dbo].[JobOrder_Master]([JobOrder_Id]),
+        CONSTRAINT [FK_JobOrder_Item_Details] FOREIGN KEY ([ItemID]) REFERENCES [dbo].[Item]([Item_ID]),
+        CONSTRAINT [FK_JobOrder_Color_Details] FOREIGN KEY ([ColorID]) REFERENCES [dbo].[Color]([Color_Id]),
+        CONSTRAINT [FK_JobOrder_Size_Details] FOREIGN KEY ([SizeId]) REFERENCES [dbo].[Size]([Size_Id]),
+        CONSTRAINT [FK_JobOrder_Uom_Details] FOREIGN KEY ([UomId]) REFERENCES [dbo].[Unit_Of_Measurement]([Uom_Id])
+    );
+
+END;
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Inward_Master'
+      AND type = 'U'
+)
+BEGIN
+CREATE TABLE Inward_Master (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Inward_Id UNIQUEIDENTIFIER NOT NULL,
+    Inward_Number NVARCHAR(MAX) NULL,
+    Inward_Date DATETIME2 NULL,
+    Quotation_Number NVARCHAR(MAX) NULL,
+    Supplier_Id UNIQUEIDENTIFIER NOT NULL,
+    Supplier_Dc_Number NVARCHAR(MAX) NULL,
+    Remarks NVARCHAR(MAX) NULL,
+    CreatedBy NVARCHAR(MAX) NULL,
+    CreatedAt DATETIME2 NULL,
+    UpdatedBy NVARCHAR(MAX) DEFAULT '',
+    UpdatedAt DATETIME2 NULL,
+    DeletedBy NVARCHAR(MAX) DEFAULT '',
+    DeletedAt DATETIME2 NULL
+)
+End
+Go
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Inward_Item'
+      AND type = 'U'
+)
+BEGIN
+CREATE TABLE Inward_Item (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Inward_Item_Id UNIQUEIDENTIFIER NOT NULL,
+    Inward_Id UNIQUEIDENTIFIER NOT NULL,
+    Item_Id UNIQUEIDENTIFIER NOT NULL,
+    Color_Id UNIQUEIDENTIFIER NOT NULL,
+    Size_Id UNIQUEIDENTIFIER NOT NULL,
+    Quantity DECIMAL(18, 2) NOT NULL,
+    Remarks NVARCHAR(MAX) NULL
+)
+End
+
+
+ALTER TABLE [dbo].[Inward_Master]
+ADD CONSTRAINT [UQ_Inward_Master_InwardID]
+UNIQUE ([Inward_Id]);
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Outward'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Outward]
+    (
+        -- Primary Key
+        [OutwardID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [Outward_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Outward Number
+        [OutwardNo] NVARCHAR(20) NOT NULL,
+
+        -- Inward Reference
+        [Inward_Id] [uniqueidentifier] NOT NULL,
+
+        -- Outward Date
+        [OutwardDate] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        ProcessTypeID INT null,
+
+		Company_Id INT null,
+
+		ExpectedReturnDate DATETIME NULL,
+
+		DeliveryChallanNo NVARCHAR(50) NULL,
+
+		VehicleNo NVARCHAR(30) NULL,
+
+		Status NVARCHAR(30) NULL,
+
+        -- Remarks
+        [Remarks] NVARCHAR(1000) NULL,
+
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_Outward]
+            PRIMARY KEY CLUSTERED ([OutwardID]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Outward_Id]
+            UNIQUE ([Outward_Id]),
+
+        -- Outward Number
+        CONSTRAINT [UQ_Outward_OutwardNo]
+            UNIQUE ([OutwardNo]),
+
+        -- Inward FK
+        CONSTRAINT [FK_Outward_Inward]
+            FOREIGN KEY ([Inward_Id])
+            REFERENCES [dbo].[Inward_Master]([Inward_Id])
+    );
+
+END;
+
+
+ALTER TABLE [dbo].[Inward_Item]
+ADD CONSTRAINT [UQ_Inward_Item_Inward_Item_Id]
+UNIQUE ([Inward_Item_Id]);
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Outward_Detail'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Outward_Detail]
+    (
+        -- Primary Key
+        [OutwardDetailID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [OutwardDetail_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Outward Reference
+        [Outward_Id] [uniqueidentifier] NOT NULL,
+
+        -- Inward Reference
+        [Inward_ID] [uniqueidentifier] NOT NULL,
+
+        -- Inward Detail Reference
+        [Inward_Item_Id] [uniqueidentifier] NOT NULL,
+
+        -- Item
+        [Item_ID] [uniqueidentifier] NOT NULL,
+
+        -- Color
+        [Color_ID] [uniqueidentifier] NOT NULL,
+
+        -- Size
+        [Size_ID] [uniqueidentifier] NOT NULL,
+
+        -- Inward Quantity
+        [InwardQty] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Outward Quantity
+        [OutwardQty] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Balance Quantity
+        [BalQty] AS ([InwardQty] - [OutwardQty]) PERSISTED,
+
+        -- Remarks
+        [Remarks] NVARCHAR(1000) NULL,
+
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_OutwardDetail]
+            PRIMARY KEY CLUSTERED ([OutwardDetailID]),
+
+        -- Business ID
+        CONSTRAINT [UQ_OutwardDetail_Id]
+            UNIQUE ([OutwardDetail_Id]),
+
+        -- Outward FK
+        CONSTRAINT [FK_OutwardDetail_Outward]
+            FOREIGN KEY ([Outward_ID])
+            REFERENCES [dbo].[Outward]([Outward_ID]),
+
+        -- Inward FK
+        CONSTRAINT [FK_OutwardDetail_Inward]
+            FOREIGN KEY ([Inward_ID])
+            REFERENCES [dbo].[Inward_Master]([Inward_ID]),
+
+        -- Inward Detail FK
+		CONSTRAINT [FK_OutwardDetail_InwardItem]
+		FOREIGN KEY ([Inward_Item_ID])
+		REFERENCES [dbo].[Inward_Item]([Inward_Item_ID]),
+			      -- item Detail FK
+        CONSTRAINT [FK_OutwardDetail_ItemDetail]
+            FOREIGN KEY ([Item_Id])
+            REFERENCES [dbo].[Item]([Item_Id]),
+
+
+			      -- color Detail FK
+        CONSTRAINT [FK_OutwardDetail_color]
+            FOREIGN KEY ([Color_Id])
+            REFERENCES [dbo].[Color]([Color_Id]),
+
+
+			      -- size Detail FK
+        CONSTRAINT [FK_OutwardDetail_Size]
+            FOREIGN KEY ([Size_Id])
+            REFERENCES [dbo].[Size]([size_Id]),
+
+        -- Quantity Validation
+        CONSTRAINT [CK_EmbroideryOutwardDetail_Qty]
+            CHECK
+            (
+                [InwardQty] >= 0
+                AND [OutwardQty] >= 0
+                AND [OutwardQty] <= [InwardQty]
+            )
+    );
+
+END;
+
+
+
+ALTER TABLE [dbo].[Supplier]
+ADD CONSTRAINT [UQ_Supplier_Supplier_Id]
+UNIQUE ([Supplier_Id]);
+
+
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Invoice_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Invoice_Master]
+    (
+        -- Primary Key
+        [InvoiceID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [Invoice_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Invoice Number
+        [InvoiceNo] NVARCHAR(30) NOT NULL,
+
+        -- Invoice Date
+        [InvoiceDate] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        -- Supplier
+        [Supplier_ID] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Company
+        [Company_Id] INT NULL,
+
+        -- Total Amount
+        [SubTotal] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Add / Less Total
+        [AddLessTotal] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Net Amount
+        [NetAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Remarks
+        [Remarks] NVARCHAR(500) NULL,
+
+        -- Audit Fields
+        [CreatedBy] INT NULL,
+
+        [CreatedDate] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] INT NULL,
+
+        [UpdatedDate] DATETIME NULL,
+
+        [DeletedBy] INT NULL,
+
+        [DeletedDate] DATETIME NULL,
+
+        -- Approval
+        [ApprovedBy] INT NULL,
+
+        [ApprovedDate] DATETIME NULL,
+
+        [ApprovalStatus] VARCHAR(20) NOT NULL
+            DEFAULT 'Pending',
+
+        -- Primary Key
+        CONSTRAINT [PK_Billing]
+            PRIMARY KEY CLUSTERED ([InvoiceID]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Billing_Invoice_Id]
+            UNIQUE ([Invoice_Id]),
+
+        -- Invoice Number
+        CONSTRAINT [UQ_Billing_InvoiceNo]
+            UNIQUE ([InvoiceNo]),
+
+        -- Supplier FK
+        CONSTRAINT [FK_Billing_Supplier]
+            FOREIGN KEY ([Supplier_ID])
+            REFERENCES [dbo].[Supplier]([Supplier_ID]),
+
+        -- Approval Status
+        CONSTRAINT [CK_Billing_ApprovalStatus]
+            CHECK ([ApprovalStatus] IN
+            ('Pending', 'Approved', 'Rejected', 'Cancelled'))
+    );
+
+END;
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Invoice_Detail'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Invoice_Detail]
+    (
+        -- Primary Key
+        [InvoiceDetailID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [InvoiceDetail_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Billing Reference
+        [Invoice_Id] [uniqueidentifier] NOT NULL,
+
+        -- Outward Reference
+        [Outward_ID] [uniqueidentifier] NOT NULL,
+
+        [OutwardDetail_Id] [uniqueidentifier] NOT NULL,
+
+        -- Item Details
+      -- Item
+        [Item_ID] [uniqueidentifier] NOT NULL,
+
+        -- Color
+        [Color_ID] [uniqueidentifier] NOT NULL,
+
+        -- Size
+        [Size_ID] [uniqueidentifier] NOT NULL,
+
+        -- Quantity
+        [InwardQty] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        [OutwardQty] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Rate
+        [Rate] DECIMAL(18,4) NOT NULL
+            DEFAULT 0,
+
+        -- Amount
+        [Amount] AS ([OutwardQty] * [Rate]) PERSISTED,
+
+        -- Remarks
+        [Remarks] NVARCHAR(500) NULL,
+
+		  -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_Invoice_Detail]
+            PRIMARY KEY CLUSTERED ([InvoiceDetailID]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Invoice_Detail_InvoiceDetail_Id]
+            UNIQUE ([InvoiceDetail_Id]),
+
+        -- Billing FK
+        CONSTRAINT [FK_Invoice_Detail_Invoice_Master]
+            FOREIGN KEY ([Invoice_Id])
+            REFERENCES [dbo].[Invoice_Master]([Invoice_Id]),
+
+        -- Outward FK
+        CONSTRAINT [FK_Invoice_Detail_Outward]
+            FOREIGN KEY ([Outward_ID])
+            REFERENCES [dbo].[Outward]([Outward_ID]),
+
+        -- Outward Detail FK
+        CONSTRAINT [FK_Invoice_Detail_OutwardDetail]
+            FOREIGN KEY ([OutwardDetail_Id])
+            REFERENCES [dbo].[Outward_Detail]([OutwardDetail_Id]),
+
+       		      -- item Detail FK
+        CONSTRAINT [FK_InvocieDetail_ItemDetail]
+            FOREIGN KEY ([Item_Id])
+            REFERENCES [dbo].[Item]([Item_Id]),
+
+			      -- color Detail FK
+        CONSTRAINT [FK_InvocieDetail_color]
+            FOREIGN KEY ([Color_Id])
+            REFERENCES [dbo].[Color]([Color_Id]),
+
+			      -- size Detail FK
+        CONSTRAINT [FK_InvocieDetail_Size]
+            FOREIGN KEY ([Size_Id])
+            REFERENCES [dbo].[Size]([size_Id]),
+
+        -- Quantity Validation
+        CONSTRAINT [CK_BillingDetail_Quantity]
+            CHECK
+            (
+                [InwardQty] >= 0
+                AND [OutwardQty] >= 0
+                AND [Rate] >= 0
+            )
+    );
+
+END;
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Invoice_Charge'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].Invoice_Charge
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,  
+
+	    [Invoice_Charge_Id] UNIQUEIDENTIFIER NOT NULL,     
+
+        [Charge_Id] UNIQUEIDENTIFIER NOT NULL,
+		
+        [Invoice_Id] UNIQUEIDENTIFIER NOT NULL,
+		      -- Add / Less Type
+        [AddLessType] CHAR(1) NOT NULL,
+
+        [Percentage] NUMERIC(5, 2) NOT NULL,
+
+        [Amount] NUMERIC(12, 2) NOT NULL,
+
+        [Remarks] NVARCHAR(1000) NULL,
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_Invoice_Charge]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_Invoice_Charge_Id]
+            UNIQUE ([Invoice_Charge_Id]),
+
+        CONSTRAINT [FK_Invoice_master_Charge]
+            FOREIGN KEY ([Invoice_Id])
+            REFERENCES [dbo].[Invoice_Master]([Invoice_Id]),
+
+		CONSTRAINT [FK_Invoice_Charge_Charge]
+            FOREIGN KEY (Charge_Id)
+            REFERENCES [dbo].[Charge]([Charge_Id]),
+
+        CONSTRAINT [UQ_Invoice_Charge_Charge]
+            UNIQUE ([Invoice_Charge_Id], [Charge_Id])
+    );
+
+END;
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Payment_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].Payment_Master
+    (
+        -- Primary Key
+        [PaymentID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [Payment_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Payment Number
+        [PaymentNo] NVARCHAR(30) NOT NULL,
+
+        -- Payment Date
+        [PaymentDate] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        -- Supplier
+        [Supplier_ID] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Company
+        [Company_Id] INT NULL,
+
+        -- Payment Mode
+        -- CASH / BANK / UPI / CHEQUE / NEFT / RTGS etc.
+        [PaymentMode_Id] UNIQUEIDENTIFIER NULL,
+
+        -- Bank / Cash Account
+        [Account_Id] UNIQUEIDENTIFIER NULL,
+
+        -- Payment Reference
+        [ReferenceNo] NVARCHAR(100) NULL,
+
+        -- Reference Date
+        [ReferenceDate] DATETIME NULL,
+
+        -- Total Payment
+        [PaymentAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- TDS / Deduction if applicable
+        [DeductionAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Net Amount Paid
+        [NetAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Remarks
+        [Remarks] NVARCHAR(500) NULL,
+
+        -- Status
+        [PaymentStatus] VARCHAR(20) NOT NULL
+            DEFAULT 'Pending',
+
+        -- Audit
+        [CreatedBy] INT NULL,
+
+        [CreatedDate] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] INT NULL,
+
+        [UpdatedDate] DATETIME NULL,
+
+        [DeletedBy] INT NULL,
+
+        [DeletedDate] DATETIME NULL,
+
+        -- Approval
+        [ApprovedBy] INT NULL,
+
+        [ApprovedDate] DATETIME NULL,
+
+        [ApprovalStatus] VARCHAR(20) NOT NULL
+            DEFAULT 'Pending',
+
+        CONSTRAINT [PK_Payment_Master1]
+            PRIMARY KEY CLUSTERED ([PaymentID]),
+
+        CONSTRAINT [UQ_Payment_Id]
+            UNIQUE ([Payment_Id]),
+
+        CONSTRAINT [UQ_Payment_No]
+            UNIQUE ([PaymentNo]),
+
+        CONSTRAINT [FK_Payment_Supplier]
+            FOREIGN KEY ([Supplier_ID])
+            REFERENCES [dbo].[Supplier]([Supplier_ID]),
+
+        CONSTRAINT [CK_Payment_Amount]
+            CHECK
+            (
+                [PaymentAmount] >= 0
+                AND [DeductionAmount] >= 0
+                AND [NetAmount] >= 0
+            ),
+
+        CONSTRAINT [CK_Payment_Status]
+            CHECK
+            (
+                [PaymentStatus] IN
+                (
+                    'Pending',
+                    'Partially Paid',
+                    'Paid',
+                    'Cancelled'
+                )
+            ),
+
+        CONSTRAINT [CK_Payment_ApprovalStatus]
+            CHECK
+            (
+                [ApprovalStatus] IN
+                (
+                    'Pending',
+                    'Approved',
+                    'Rejected',
+                    'Cancelled'
+                )
+            )
+    );
+
+END;
+GO
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Payment_Detail'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Payment_Detail]
+    (
+        -- Primary Key
+        [PaymentDetailID] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [PaymentDetail_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Payment Reference
+        [Payment_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Invoice Reference
+        [Invoice_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Invoice Amount at time of payment
+        [InvoiceAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Previous Paid Amount
+        [PreviousPaidAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Amount being paid now
+        [PaidAmount] DECIMAL(18,3) NOT NULL
+            DEFAULT 0,
+
+        -- Remaining Balance
+        [BalanceAmount] AS
+        (
+            [InvoiceAmount]
+            - [PreviousPaidAmount]
+            - [PaidAmount]
+        ) PERSISTED,
+
+        -- Remarks
+        [Remarks] NVARCHAR(500) NULL,
+
+        -- Audit
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_Payment_Detail]
+            PRIMARY KEY CLUSTERED ([PaymentDetailID]),
+
+        CONSTRAINT [UQ_Payment_Detail_Id]
+            UNIQUE ([PaymentDetail_Id]),
+
+        CONSTRAINT [FK_Payment_Detail_Master]
+            FOREIGN KEY ([Payment_Id])
+            REFERENCES [dbo].[Payment_Master]([Payment_Id]),
+
+        CONSTRAINT [FK_Payment_Detail_Invoice]
+            FOREIGN KEY ([Invoice_Id])
+            REFERENCES [dbo].[Invoice_Master]([Invoice_Id]),
+
+        CONSTRAINT [CK_Payment_Detail_Amount]
+            CHECK
+            (
+                [InvoiceAmount] >= 0
+                AND [PreviousPaidAmount] >= 0
+                AND [PaidAmount] >= 0
+            )
+    );
+
+END;
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Payment_Charge'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].Payment_Charge
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,  
+
+	    [Payment_Charge_Id] UNIQUEIDENTIFIER NOT NULL,     
+
+        [Charge_Id] UNIQUEIDENTIFIER NOT NULL,
+		
+        [Payment_Id] UNIQUEIDENTIFIER NOT NULL,
+		      -- Add / Less Type
+        [AddLessType] CHAR(1) NOT NULL,
+
+        [Percentage] NUMERIC(5, 2) NOT NULL,
+
+        [Amount] NUMERIC(12, 2) NOT NULL,
+
+        [Remarks] NVARCHAR(1000) NULL,
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_Payment_Charge]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_Payment_Charge_Id]
+            UNIQUE ([Payment_Charge_Id]),
+
+        CONSTRAINT [FK_Payment_Charge_Charge1]
+            FOREIGN KEY ([Payment_Id])
+            REFERENCES [dbo].[Payment_Master]([Payment_Id]),
+
+		CONSTRAINT [FK_Payment_Charge_Charge]
+            FOREIGN KEY (Charge_Id)
+            REFERENCES [dbo].[Charge]([Charge_Id]),
+
+        CONSTRAINT [UQ_Payment_Charge_Charge]
+            UNIQUE ([Payment_Charge_Id], [Charge_Id])
+    );
+
+END;
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Purchase_Charge'
+      AND type = 'U'
+)
+BEGIN
+    CREATE TABLE [dbo].[Purchase_Charge]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        [Purchase_Charge_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWID(),
+
+        [Purchase_Id] UNIQUEIDENTIFIER NOT NULL,
+        [Charge_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- + = Additional charge, - = Discount
+        [AddLessType] CHAR(1) NOT NULL,
+
+        [Percentage] NUMERIC(5,2) NOT NULL DEFAULT (0),
+        [Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Remarks] NVARCHAR(1000) NULL,
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [UpdatedAt] DATETIME2 NULL,
+        [DeletedBy] NVARCHAR(100) NULL,
+        [DeletedAt] DATETIME2 NULL,
+
+        CONSTRAINT [PK_Purchase_Charge]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_Purchase_Charge_Id]
+            UNIQUE ([Purchase_Charge_Id]),
+
+        CONSTRAINT [FK_Purchase_Charge_Master]
+            FOREIGN KEY ([Purchase_Id])
+            REFERENCES [dbo].[Purchase_Master] ([Purchase_Id]),
+
+        CONSTRAINT [FK_Purchase_Charge_Charge]
+            FOREIGN KEY ([Charge_Id])
+            REFERENCES [dbo].[Charge] ([Charge_Id]),
+
+        CONSTRAINT [CK_Purchase_Charge_AddLessType]
+            CHECK ([AddLessType] IN ('+', '-')),
+
+        CONSTRAINT [CK_Purchase_Charge_Percentage]
+            CHECK ([Percentage] >= 0),
+
+        CONSTRAINT [CK_Purchase_Charge_Amount]
+            CHECK ([Amount] >= 0)
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Purchase_Detail'
+      AND type = 'U'
+)
+BEGIN
+    CREATE TABLE [dbo].[Purchase_Detail]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        [Purchase_Detail_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWID(),
+
+        [Purchase_Id] UNIQUEIDENTIFIER NOT NULL,
+        [Item_Id] UNIQUEIDENTIFIER NOT NULL,
+        [UOM_Id] UNIQUEIDENTIFIER NULL,
+
+        [Size_Id] UNIQUEIDENTIFIER NULL,
+        [Color_Id] UNIQUEIDENTIFIER NULL,
+
+        [Quantity] NUMERIC(15,3) NOT NULL DEFAULT (0),
+        [Received_Qty] NUMERIC(15,3) NOT NULL DEFAULT (0),
+        [Rate] NUMERIC(15,5) NOT NULL DEFAULT (0),
+
+        [Discount_Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Tax_Percent] NUMERIC(5,2) NOT NULL DEFAULT (0),
+        [Tax_Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+
+        [Required_Date] DATETIME2 NULL,
+        [Item_Remarks] NVARCHAR(500) NULL,
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [UpdatedAt] DATETIME2 NULL,
+        [DeletedBy] NVARCHAR(100) NULL,
+        [DeletedAt] DATETIME2 NULL,
+
+        CONSTRAINT [PK_Purchase_Detail]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_Purchase_Detail_Id]
+            UNIQUE ([Purchase_Detail_Id]),
+
+        CONSTRAINT [FK_Purchase_Detail_Master]
+            FOREIGN KEY ([Purchase_Id])
+            REFERENCES [dbo].[Purchase_Master] ([Purchase_Id]),
+
+        CONSTRAINT [FK_Purchase_Detail_Item]
+            FOREIGN KEY ([Item_Id])
+            REFERENCES [dbo].[Item] ([item_id]),
+
+        CONSTRAINT [FK_Purchase_Detail_UOM]
+            FOREIGN KEY ([UOM_Id])
+            REFERENCES [dbo].[Unit_of_measurement] ([uom_id]),
+
+        CONSTRAINT [FK_Purchase_Detail_Size]
+            FOREIGN KEY ([Size_Id])
+            REFERENCES [dbo].[size] ([size_id]),
+
+        CONSTRAINT [FK_Purchase_Detail_Color]
+            FOREIGN KEY ([Color_Id])
+            REFERENCES [dbo].[color] ([color_id]),
+
+        CONSTRAINT [CK_Purchase_Detail_Quantity]
+            CHECK
+            (
+                [Quantity] >= 0
+                AND [Received_Qty] >= 0
+            ),
+
+        CONSTRAINT [CK_Purchase_Detail_Rate]
+            CHECK ([Rate] >= 0),
+
+        CONSTRAINT [CK_Purchase_Detail_Tax_Percent]
+            CHECK ([Tax_Percent] BETWEEN 0 AND 100)
+    );
+END;
+GO
+
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'Purchase_Master'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    CREATE TABLE [dbo].[Purchase_Master]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        [Purchase_Id] UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT [DF_Purchase_Master_Purchase_Id]
+            DEFAULT NEWID(),
+
+        [Purchase_No] VARCHAR(30) NOT NULL,
+
+        [Purchase_Date] DATETIME2 NOT NULL
+            CONSTRAINT [DF_Purchase_Master_Purchase_Date]
+            DEFAULT SYSDATETIME(),
+
+        [Company_Id] UNIQUEIDENTIFIER NOT NULL,
+        [Supplier_Id] UNIQUEIDENTIFIER NOT NULL,
+        [Reference_No] VARCHAR(50) NULL,
+        [PaymentTerms_Id] UNIQUEIDENTIFIER NULL,
+
+        [Sub_Total] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Discount_Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Tax_Percent] NUMERIC(5,2) NOT NULL DEFAULT (0),
+        [Tax_Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Other_Charges] NUMERIC(15,2) NOT NULL DEFAULT (0),
+        [Net_Amount] NUMERIC(15,2) NOT NULL DEFAULT (0),
+
+        [Remarks] NVARCHAR(1000) NULL,
+
+        [IsApproved] BIT NOT NULL DEFAULT (0),
+        [ApprovedBy] UNIQUEIDENTIFIER  NULL,
+        [ApprovedAt] DATETIME2 NULL,
+
+        [IsClosed] BIT NOT NULL DEFAULT (0),
+        [IsCancelled] BIT NOT NULL DEFAULT (0),
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [UpdatedAt] DATETIME2 NULL,
+        [DeletedBy] NVARCHAR(100) NULL,
+        [DeletedAt] DATETIME2 NULL,
+
+        CONSTRAINT [PK_Purchase_Master]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_Purchase_Master_Purchase_Id]
+            UNIQUE ([Purchase_Id]),
+
+        CONSTRAINT [UQ_Purchase_Master_Company_No]
+            UNIQUE ([Company_Id], [Purchase_No]),
+
+        -- Company.Id is INT and is the primary key
+        CONSTRAINT [FK_Purchase_Master_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company] ([Company_Id]),
+
+        CONSTRAINT [FK_Purchase_Master_Supplier]
+            FOREIGN KEY ([Supplier_Id])
+            REFERENCES [dbo].[Supplier] ([Supplier_Id]),
+
+        CONSTRAINT [FK_Purchase_Master_PaymentTerms]
+            FOREIGN KEY ([PaymentTerms_Id])
+            REFERENCES [dbo].[Payment_Terms] ([PaymentTerms_Id]),
+
+        CONSTRAINT [FK_Purchase_Master_ApprovedBy]
+            FOREIGN KEY ([ApprovedBy])
+            REFERENCES [dbo].[Employee] ([Employee_Id]),
+
+        CONSTRAINT [CK_Purchase_Master_Amounts]
+            CHECK
+            (
+                [Sub_Total] >= 0
+                AND [Discount_Amount] >= 0
+                AND [Tax_Amount] >= 0
+                AND [Other_Charges] >= 0
+                AND [Net_Amount] >= 0
+            ),
+
+        CONSTRAINT [CK_Purchase_Master_Tax_Percent]
+            CHECK ([Tax_Percent] BETWEEN 0 AND 100)
+    );
+END;
+GO
+
+
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'StockDetail'
+      AND schema_id = SCHEMA_ID('dbo')
+      AND type = 'U'
+)
+BEGIN
+    CREATE TABLE [dbo].[StockDetail]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        [Stock_Id] UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT [DF_StockDetail_Stock_Id] DEFAULT (NEWID()),
+
+        [StockNo] VARCHAR(15) NOT NULL,
+
+        [ItemId] UNIQUEIDENTIFIER NULL,
+        [ColorId] UNIQUEIDENTIFIER NULL,
+        [SizeId] UNIQUEIDENTIFIER NULL,
+
+        [Qty] NUMERIC(14,3) NOT NULL
+            CONSTRAINT [DF_StockDetail_Qty] DEFAULT (0),
+
+        [Rate] NUMERIC(14,4) NULL,
+
+        [AllotedQty] NUMERIC(14,3) NULL,
+
+        [Product_Id] UNIQUEIDENTIFIER NULL,
+
+        [SQty] NUMERIC(12,3) NULL,
+        [BalQty] NUMERIC(14,3) NULL,
+        [StockDate] DATETIME NULL,
+
+        [Company_Id] UNIQUEIDENTIFIER NULL,
+        [ReturnQty] NUMERIC(14,3) NULL,
+        [Uom_Id] UNIQUEIDENTIFIER NULL,
+        [processId] UNIQUEIDENTIFIER NULL,
+        [supplierid] UNIQUEIDENTIFIER NULL,
+
+        [Remarks] VARCHAR(1000) NULL,
+
+        [MarkupRate] NUMERIC(14,4) NOT NULL
+            CONSTRAINT [DF_StockDetail_MarkupRate] DEFAULT (0),
+
+        [ItemCode] VARCHAR(30) NOT NULL
+            CONSTRAINT [DF_StockDetail_ItemCode] DEFAULT (''),
+
+        [IsActive] BIT NOT NULL
+            CONSTRAINT [DF_StockDetail_IsActive] DEFAULT (1),
+
+        [IsDeleted] BIT NOT NULL
+            CONSTRAINT [DF_StockDetail_IsDeleted] DEFAULT (0),
+
+        [CreatedBy] VARCHAR(MAX) NOT NULL,
+
+        [CreatedAt] DATETIME NOT NULL
+            CONSTRAINT [DF_StockDetail_CreatedAt] DEFAULT (GETDATE()),
+
+        [UpdatedBy] VARCHAR(MAX) NULL,
+        [UpdatedAt] DATETIME NULL,
+        [DeletedBy] VARCHAR(MAX) NULL,
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_StockDetail]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_StockDetail_Stock_Id]
+            UNIQUE ([Stock_Id]),
+
+        CONSTRAINT [FK_StockDetail_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company] ([Company_Id]),
+
+        CONSTRAINT [FK_StockDetail_Supplier]
+            FOREIGN KEY ([supplierid])
+            REFERENCES [dbo].[Supplier] ([Supplier_Id]),
+
+        CONSTRAINT [FK_StockDetail_Uom]
+            FOREIGN KEY ([Uom_Id])
+            REFERENCES [dbo].[Unit_Of_Measurement] ([Uom_Id]),
+
+        CONSTRAINT [FK_StockDetail_Item]
+            FOREIGN KEY ([ItemId])
+            REFERENCES [dbo].[Item] ([Item_Id]),
+
+        CONSTRAINT [FK_StockDetail_Color]
+            FOREIGN KEY ([ColorId])
+            REFERENCES [dbo].[Color] ([Color_Id]),
+
+        CONSTRAINT [FK_StockDetail_Size]
+            FOREIGN KEY ([SizeId])
+            REFERENCES [dbo].[Size] ([Size_Id]),
+
+        CONSTRAINT [CK_StockDetail_AllotedQty]
+            CHECK ([AllotedQty] IS NULL OR [AllotedQty] >= 0),
+
+        CONSTRAINT [CK_StockDetail_BalQty]
+            CHECK ([BalQty] IS NULL OR [BalQty] >= 0),
+
+        CONSTRAINT [CK_StockDetail_StockNo]
+            CHECK ([StockNo] <> ''),
+
+        CONSTRAINT [CK_StockDetail_Qty]
+            CHECK ([Qty] >= 0)
+    );
+END;
+GO
+
+
+CREATE TABLE Inward_Stock (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+	Inward_Stock_Id UNIQUEIDENTIFIER NOT NULL,
+    Inward_Item_Id UNIQUEIDENTIFIER NOT NULL,
+    Inward_Id UNIQUEIDENTIFIER NOT NULL,
+ 	[Stockid] [int] NOT NULL,
+	[Quantity] [numeric](12, 3) NOT NULL,
+	[Uomid] [int] NULL,
+    Remarks NVARCHAR(MAX) NULL
+)
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Inward_Stock'
+      AND schema_id = SCHEMA_ID('dbo')
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Inward_Stock]
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [Inward_Stock_Id] UNIQUEIDENTIFIER NOT NULL
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Inward Item Reference
+        [Inward_Item_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Inward Reference
+        [Inward_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Stock Reference
+        [Stock_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Quantity
+        [Quantity] NUMERIC(12,3) NOT NULL,
+
+        -- Unit of Measurement
+        [Uom_id] UNIQUEIDENTIFIER NULL,
+
+        -- Remarks
+        [Remarks] NVARCHAR(MAX) NULL,
+
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL
+            DEFAULT GETDATE(),
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_Inward_Stock]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_Inward_Stock_Id]
+            UNIQUE ([Inward_Stock_Id]),
+
+			  CONSTRAINT [FK_Inward_Stock_Uom]
+            FOREIGN KEY ([Uom_Id])
+            REFERENCES [dbo].[Unit_Of_Measurement] ([Uom_Id]),
+
+			 CONSTRAINT [FK_Inward_Stock_StockDetail]
+            FOREIGN KEY ([Stock_Id])
+            REFERENCES [dbo].[StockDetail] ([Stock_Id]),
+
+			 CONSTRAINT [FK_Inward_Stock_Inward_master]
+            FOREIGN KEY ([Inward_Id])
+            REFERENCES [dbo].[Inward_Master] ([Inward_Id]),
+
+			 CONSTRAINT [FK_Inward_Stock_Inward_Item]
+            FOREIGN KEY ([Inward_Item_Id])
+            REFERENCES [dbo].[Inward_Item] ([Inward_Item_Id])
+    );
+
+END;
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'JobOrder_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].JobOrder_Master
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+
+        -- Business Identifier
+        [JobOrder_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Billing Number
+        [JobOrder_Number] NVARCHAR(15) NOT NULL,
+
+		[Job_Order_Ref] [varchar](15) NULL,
+		   -- quotation
+        [Quotation_Id] UNIQUEIDENTIFIER NULL,    
+        -- Company
+        [Company_Id] INT NOT NULL,
+
+        -- Supplier
+        [Supplier_Id] INT NOT NULL,
+
+        [JobOrder_Date] DATETIME NULL,
+
+	    [Currency]  NVARCHAR(50) NULL,
+
+	    [ExcessPer] [numeric](5, 2) NULL,
+
+	   	[Rate] [numeric](15, 5) NULL,
+
+		[JobOrdType] [varchar](1) NULL,
+
+		[Commit] [bit] NULL,
+	    [Cancel] [bit] NULL,
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+		ApprovedBy INT NULL,
+		ApprovedDate DATETIME NULL,
+	    ApprovalStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
+		Remarks NVARCHAR(500) NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_JobOrder_Master]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_JobOrder_Master_Id]
+            UNIQUE ([JobOrder_Id]),
+
+        -- Company FK
+        CONSTRAINT [FK_JobOrder_Master_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company]([Id]),
+
+			    -- quotation FK
+        CONSTRAINT [FK_JobOrder_Master_quotation]
+            FOREIGN KEY ([quotation_Id])
+            REFERENCES [dbo].[Quotation_Master]([quotation_Id]),
+
+        -- Supplier FK
+        CONSTRAINT [FK_JobOrder_Master_Supplier]
+            FOREIGN KEY ([Supplier_Id])
+            REFERENCES [dbo].[Supplier]([Id])
+    );
+
+END;
+
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'JobOrder_Details'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].JobOrder_Details
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+		[JobOrder_Details_Id] [uniqueidentifier] NOT NULL,
+		[JobOrder_Id] [uniqueidentifier] NOT NULL,	
+		ItemID [uniqueidentifier] NOT NULL,
+		ColorID [uniqueidentifier] NOT NULL,
+		SizeID [uniqueidentifier] NOT NULL,
+		UomID [uniqueidentifier] NOT NULL,
+		Qty DECIMAL(18,3),
+
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,	
+
+        -- Primary Key
+           -- Primary Key
+        CONSTRAINT [PK_JobOrder_Details]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_JobOrder_Details_Id]
+            UNIQUE ([JobOrder_Details_Id]),
+
+        -- Bill Receipt FK
+
+			  CONSTRAINT [FK_JobOrder_Details_Master]
+            FOREIGN KEY ([JobOrder_Id])
+            REFERENCES [dbo].[JobOrder_Master]([JobOrder_Id]),
+
+			  CONSTRAINT [FK_JobOrder_Item_Details]
+            FOREIGN KEY ([ItemID])
+            REFERENCES [dbo].[Item]([Item_ID]),
+
+			
+			  CONSTRAINT [FK_JobOrder_Color_Details]
+            FOREIGN KEY ([ColorID])
+            REFERENCES [dbo].[Color]([Color_Id]),
+
+			
+			  CONSTRAINT [FK_JobOrder_Size_Details]
+            FOREIGN KEY ([SizeId])
+            REFERENCES [dbo].[Size]([Size_Id]),
+
+			 CONSTRAINT [FK_JobOrder_Uom_Details]
+            FOREIGN KEY ([UomId])
+            REFERENCES [dbo].[Unit_Of_Measurement]([Uom_Id])
+    );
+
+END;

@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Repository\Erp.Repository.csproj" />
+  </ItemGroup>
+
+
+  <!--<ItemGroup>
+    <Folder Include="Fonts\" />
+  </ItemGroup>-->
+
+	<ItemGroup>
+		<None Update="Fonts\*.ttf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+
+</Project>
