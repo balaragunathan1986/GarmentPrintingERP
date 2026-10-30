@@ -98,6 +98,7 @@ namespace Erp.Repository.Implementation.Production
                     Quotation_Id = NormalizeGuid(model.Quotation_Id),
                     Company_Id = model.Company_Id,
                     Supplier_Id = model.Supplier_Id,
+                    Style_Id = model.Style_Id,
                     JobOrder_Date = model.JobOrder_Date,
                     Currency = model.Currency,
                     ExcessPer = model.ExcessPer,
@@ -161,6 +162,7 @@ namespace Erp.Repository.Implementation.Production
                 jobOrder.Quotation_Id = NormalizeGuid(model.Quotation_Id);
                 jobOrder.Company_Id = model.Company_Id;
                 jobOrder.Supplier_Id = model.Supplier_Id;
+                jobOrder.Style_Id = model.Style_Id;
                 jobOrder.JobOrder_Date = model.JobOrder_Date;
                 jobOrder.Currency = model.Currency;
                 jobOrder.ExcessPer = model.ExcessPer;
@@ -282,6 +284,7 @@ namespace Erp.Repository.Implementation.Production
                     Quotation_Id = master.Quotation_Id,
                     Company_Id = master.Company_Id,
                     Supplier_Id = master.Supplier_Id,
+                    Style_Id = master.Style_Id,
                     JobOrder_Date = master.JobOrder_Date,
                     Currency = master.Currency,
                     ExcessPer = master.ExcessPer,

@@ -1723,3 +1723,8 @@ IF COL_LENGTH('dbo.Quotation_Master', 'Style_Id') IS NULL
 BEGIN
     ALTER TABLE [dbo].[Quotation_Master] ADD [Style_Id] UNIQUEIDENTIFIER NULL;
 END
+
+IF COL_LENGTH('dbo.JobOrder_Master', 'Style_Id') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[JobOrder_Master] ADD [Style_Id] UNIQUEIDENTIFIER NULL;
+END

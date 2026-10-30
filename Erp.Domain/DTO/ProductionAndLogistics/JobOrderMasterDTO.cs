@@ -15,6 +15,7 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public Guid? Quotation_Id { get; set; }
         public int Company_Id { get; set; }
         public int Supplier_Id { get; set; }
+        public Guid? Style_Id { get; set; }
         public DateTime? JobOrder_Date { get; set; }
         public string? Currency { get; set; }
         public decimal? ExcessPer { get; set; }
