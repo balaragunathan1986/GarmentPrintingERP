@@ -146,6 +146,13 @@ namespace Erp.Repository.Implementation.Production
         {
             Validate(model);
 
+            // An edit posted as a create must update the existing issue, not insert a duplicate.
+            if (model.Issue_Id != Guid.Empty
+                && await _dbContext.IssueMaster.AnyAsync(x => x.Issue_Id == model.Issue_Id && !x.IsDeleted))
+            {
+                return await Update(model);
+            }
+
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
             try
@@ -196,6 +203,7 @@ namespace Erp.Repository.Implementation.Production
                 if (allocations.Count > 0)
                 {
                     await _dbContext.IssueStockAllocations.AddRangeAsync(allocations);
+                    await ApplyStock(allocations, 1, updatedBy: createdBy, now);
                     await _dbContext.SaveChangesAsync();
                 }
 
@@ -263,6 +271,7 @@ namespace Erp.Repository.Implementation.Production
                 var existingAllocations = await _dbContext.IssueStockAllocations
                     .Where(allocation => existingIds.Contains(allocation.Issue_Details_Id))
                     .ToListAsync();
+                await ApplyStock(existingAllocations, -1, updatedBy, now);
                 _dbContext.IssueStockAllocations.RemoveRange(existingAllocations);
                 await _dbContext.SaveChangesAsync();
 
@@ -305,6 +314,7 @@ namespace Erp.Repository.Implementation.Production
                 if (allocations.Count > 0)
                 {
                     await _dbContext.IssueStockAllocations.AddRangeAsync(allocations);
+                    await ApplyStock(allocations, 1, updatedBy, now);
                     await _dbContext.SaveChangesAsync();
                 }
 
@@ -320,21 +330,87 @@ namespace Erp.Repository.Implementation.Production
 
         public async Task<bool> Delete(Guid issueId, string? deletedBy)
         {
-            var issue = await _dbContext.IssueMaster
-                .FirstOrDefaultAsync(x => x.Issue_Id == issueId && !x.IsDeleted);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-            if (issue == null)
+            try
             {
-                return false;
+                var issue = await _dbContext.IssueMaster
+                    .FirstOrDefaultAsync(x => x.Issue_Id == issueId && !x.IsDeleted);
+
+                if (issue == null)
+                {
+                    return false;
+                }
+
+                var now = DateTime.UtcNow;
+                var detailIds = await _dbContext.IssueDetails
+                    .Where(d => d.Issue_Id == issueId)
+                    .Select(d => d.Issue_Details_Id)
+                    .ToListAsync();
+
+                // Return the issued quantity to stock and drop the allocations.
+                var allocations = await _dbContext.IssueStockAllocations
+                    .Where(a => detailIds.Contains(a.Issue_Details_Id))
+                    .ToListAsync();
+                await ApplyStock(allocations, -1, deletedBy, now);
+                _dbContext.IssueStockAllocations.RemoveRange(allocations);
+
+                issue.IsDeleted = true;
+                issue.IsActive = false;
+                issue.UpdatedBy = deletedBy;
+                issue.UpdatedAt = now;
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        // direction +1 issues stock (AllotedQty up, BalQty down); -1 reverses it.
+        private async Task ApplyStock(
+            IEnumerable<IssueStockAllocationDTO> allocations,
+            int direction,
+            string? updatedBy,
+            DateTime now)
+        {
+            var totals = allocations
+                .GroupBy(a => a.Stock_Id)
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.Allocated_Qty));
+
+            if (totals.Count == 0)
+            {
+                return;
             }
 
-            issue.IsDeleted = true;
-            issue.IsActive = false;
-            issue.UpdatedBy = deletedBy;
-            issue.UpdatedAt = DateTime.UtcNow;
+            var stockIds = totals.Keys.ToList();
+            var stocks = await _dbContext.StockDetails
+                .Where(s => stockIds.Contains(s.Stock_Id) && s.DeletedAt == null)
+                .ToListAsync();
 
-            await _dbContext.SaveChangesAsync();
-            return true;
+            foreach (var (stockId, qty) in totals)
+            {
+                var stock = stocks.FirstOrDefault(s => s.Stock_Id == stockId)
+                    ?? throw new ArgumentException($"Stock {stockId} not found.");
+
+                var delta = qty * direction;
+                var balance = (stock.BalQty ?? stock.Qty) - delta;
+
+                if (balance < 0)
+                {
+                    throw new ArgumentException(
+                        $"Insufficient balance for stock {stock.StockNo}. Available {stock.BalQty ?? stock.Qty}, requested {qty}.");
+                }
+
+                stock.AllotedQty = Math.Max(0, (stock.AllotedQty ?? 0) + delta);
+                stock.BalQty = balance;
+                stock.UpdatedBy = updatedBy;
+                stock.UpdatedAt = now;
+            }
         }
 
         private static void Validate(IssueModel model)
