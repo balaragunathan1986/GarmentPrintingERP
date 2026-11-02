@@ -1728,3 +1728,265 @@ IF COL_LENGTH('dbo.JobOrder_Master', 'Style_Id') IS NULL
 BEGIN
     ALTER TABLE [dbo].[JobOrder_Master] ADD [Style_Id] UNIQUEIDENTIFIER NULL;
 END
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'Issue_Master'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Issue_Master]
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL
+            CONSTRAINT [PK_Issue_Master] PRIMARY KEY,
+
+        -- Business Identifier
+        [Issue_Id] UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT [DF_Issue_Id]
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Issue Details
+        [Issue_Number] NVARCHAR(30) NOT NULL,
+        [Issue_Date] DATETIME2(0) NOT NULL,
+
+        -- Supplier
+        [Supplier_Id] UNIQUEIDENTIFIER NULL,
+
+        -- Issue Type
+        [Issue_Type] NVARCHAR(50) NULL,
+
+        -- Job Order and Style
+        [Joborderno] VARCHAR(15) NULL,
+        [StyleId] UNIQUEIDENTIFIER NULL,
+
+        -- Supplier / Self
+        [Unit_supplier_self] CHAR(1) NOT NULL,
+
+        -- Vehicle Details
+        [GatePassVehicle] VARCHAR(15) NULL,
+
+        -- Remarks
+        [Remarks] NVARCHAR(1000) NULL,
+
+        -- Terms and Conditions
+        [Terms_Conditions] NVARCHAR(MAX) NULL,
+
+        -- Company
+        [Company_Id] INT NULL,
+
+        -- Audit Fields
+        [CreatedBy] VARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME2(0) NOT NULL
+            CONSTRAINT [DF_Issue_Master_CreatedAt]
+            DEFAULT SYSUTCDATETIME(),
+
+        [UpdatedBy] VARCHAR(100) NULL,
+        [UpdatedAt] DATETIME2(0) NULL,
+
+        -- Status
+        [IsActive] BIT NOT NULL
+            CONSTRAINT [DF_Issue_Master_IsActive]
+            DEFAULT (1),
+
+        [IsDeleted] BIT NOT NULL
+            CONSTRAINT [DF_Issue_Master_IsDeleted]
+            DEFAULT (0),
+
+        -- Unique Business Identifier
+        CONSTRAINT [UQ_Issue_Master_Id]
+            UNIQUE ([Issue_Id]),
+
+        -- Company Foreign Key
+        CONSTRAINT [FK_Issue_Master_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company] ([Id]),
+
+        -- Style Foreign Key
+        CONSTRAINT [FK_Issue_Master_Style]
+            FOREIGN KEY ([StyleId])
+            REFERENCES [dbo].[Style] ([StyleId]),
+
+        -- Supplier Foreign Key
+        CONSTRAINT [FK_Issue_Master_Supplier]
+            FOREIGN KEY ([Supplier_Id])
+            REFERENCES [dbo].[Supplier] ([Supplier_Id])
+    );
+
+    -- Unique Issue Number
+    CREATE UNIQUE INDEX [UX_Issue_Master_Number]
+        ON [dbo].[Issue_Master] ([Issue_Number]);
+
+    -- Issue Date Index
+    CREATE INDEX [IX_Issue_Master_Date]
+        ON [dbo].[Issue_Master] ([Issue_Date]);
+
+    -- Supplier Index
+    CREATE INDEX [IX_Issue_Master_Supplier]
+        ON [dbo].[Issue_Master] ([Supplier_Id]);
+
+    -- Company Index
+    CREATE INDEX [IX_Issue_Master_Company]
+        ON [dbo].[Issue_Master] ([Company_Id]);
+
+END;
+GO
+
+ALTER TABLE dbo.Style
+ADD CONSTRAINT PK_Style
+PRIMARY KEY (StyleId);
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Issue_Details'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Issue_Details]
+    (
+        -- Primary Key
+        [Id] BIGINT IDENTITY(1,1) NOT NULL
+            CONSTRAINT [PK_Issue_Details] PRIMARY KEY,
+
+        -- Business/Application Identifier
+        [Issue_Details_Id] UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT [DF_Issue_Details_Id]
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Sales Reference
+        [Issue_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Product
+        [Item_Id] [uniqueidentifier] NOT NULL,
+		[Size_Id] [uniqueidentifier] NULL,
+		[Color_Id] [uniqueidentifier] NULL,
+        -- UOM
+        [UOM_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Quantity
+        [Quantity] DECIMAL(18,3) NOT NULL,
+
+        -- Rate
+        [Rate] DECIMAL(18,2) NOT NULL,
+     
+        -- Remarks
+        [Remarks] NVARCHAR(500) NULL,
+
+        -- Audit
+        [CreatedBy] VARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME2(0) NOT NULL
+            CONSTRAINT [DF_Issue_Details_CreatedAt]
+            DEFAULT SYSUTCDATETIME(),
+
+        [UpdatedBy] VARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME2(0) NULL,
+
+        -- Constraints
+        CONSTRAINT [UQ_Issue_Details_Id]
+            UNIQUE ([Issue_Details_Id]),
+
+        CONSTRAINT [FK_Issue_Details_Issue_Master]
+            FOREIGN KEY ([Issue_Id])
+            REFERENCES [dbo].[Issue_Master]([Issue_Id]),
+
+			   CONSTRAINT [FK_Issue_Details_Item]
+            FOREIGN KEY ([Item_Id])
+            REFERENCES [dbo].[Item]([Item_Id]),
+
+			   CONSTRAINT [FK_Issue_Details_Color]
+            FOREIGN KEY ([Color_Id])
+            REFERENCES [dbo].[Color]([Color_Id]),
+
+			   CONSTRAINT [FK_Issue_Details_Size]
+            FOREIGN KEY ([Size_Id])
+            REFERENCES [dbo].[Size]([Size_Id]),
+
+			  CONSTRAINT [FK_Issue_Details_Uom]
+            FOREIGN KEY ([Uom_Id])
+            REFERENCES [dbo].[unit_of_measurement]([Uom_Id]),
+
+        CONSTRAINT [CK_Issue_Details_Quantity]
+            CHECK ([Quantity] > 0),
+
+        CONSTRAINT [CK_Issue_Details_Rate]
+            CHECK ([Rate] >= 0)
+
+    );
+ 
+
+END
+GO
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'Issue_Stock_Allocation'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].[Issue_Stock_Allocation]
+    (
+        -- Primary Key
+        [Id] BIGINT IDENTITY(1,1) NOT NULL
+            CONSTRAINT [PK_Issue_Stock_Allocation] PRIMARY KEY,
+
+        -- Business/Application Identifier
+        [Issue_Stock_Allocation_Id] UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT [DF_Issue_Stock_Allocation_Id]
+            DEFAULT NEWSEQUENTIALID(),
+
+        -- Sales Detail Reference
+        [Issue_Details_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Stock Reference
+        [Stock_Id] UNIQUEIDENTIFIER NOT NULL,
+
+        -- Allocated Quantity
+        [Allocated_Qty] DECIMAL(18,3) NOT NULL,
+
+        -- Audit
+        [CreatedBy] VARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME2(0) NOT NULL
+            CONSTRAINT [DF_Issue_Stock_Allocation_CreatedAt]
+            DEFAULT SYSUTCDATETIME(),
+
+        [UpdatedBy] VARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME2(0) NULL,
+
+        -- Constraints
+        CONSTRAINT [UQ_Issue_Stock_Allocation_Id]
+            UNIQUE ([Issue_Stock_Allocation_Id]),
+
+        CONSTRAINT [FK_Issue_Stock_Allocation_Issue_Detail]
+            FOREIGN KEY ([Issue_Details_Id])
+            REFERENCES [dbo].[Issue_Details]([Issue_Details_Id]),
+
+			    CONSTRAINT [FK_Issue_Stock_Allocation_Stock_Detail]
+            FOREIGN KEY ([Stock_Id])
+            REFERENCES [dbo].[StockDetail]([Stock_Id]),
+
+        CONSTRAINT [CK_Issue_Stock_Allocation_Qty]
+            CHECK ([Allocated_Qty] > 0)
+    );
+
+
+END
+GO

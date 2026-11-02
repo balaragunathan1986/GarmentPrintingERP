@@ -18,6 +18,7 @@ namespace Erp.Utility
       public static readonly string Wages = "WG";
       public static readonly string Quotation = "QT";
       public static readonly string JobOrder = "JO";
+      public static readonly string Issue = "IS";
       public static readonly string Inward = "IW";
       public static readonly string Outward = "OW";
       public static readonly string Invoice = "IN";
