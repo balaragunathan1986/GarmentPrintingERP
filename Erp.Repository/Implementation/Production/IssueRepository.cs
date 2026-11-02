@@ -327,46 +327,79 @@ namespace Erp.Repository.Implementation.Production
                 throw;
             }
         }
-
         public async Task<bool> Delete(Guid issueId, string? deletedBy)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync();
 
             try
             {
                 var issue = await _dbContext.IssueMaster
-                    .FirstOrDefaultAsync(x => x.Issue_Id == issueId && !x.IsDeleted);
+                    .FirstOrDefaultAsync(x =>
+                        x.Issue_Id == issueId && !x.IsDeleted);
 
                 if (issue == null)
                 {
+                    await transaction.RollbackAsync();
                     return false;
                 }
 
                 var now = DateTime.UtcNow;
-                var detailIds = await _dbContext.IssueDetails
+
+                var details = await _dbContext.IssueDetails
                     .Where(d => d.Issue_Id == issueId)
-                    .Select(d => d.Issue_Details_Id)
                     .ToListAsync();
 
-                // Return the issued quantity to stock and drop the allocations.
+                var detailIds = details
+                    .Select(d => d.Issue_Details_Id)
+                    .ToList();
+
                 var allocations = await _dbContext.IssueStockAllocations
                     .Where(a => detailIds.Contains(a.Issue_Details_Id))
                     .ToListAsync();
-                await ApplyStock(allocations, -1, deletedBy, now);
-                _dbContext.IssueStockAllocations.RemoveRange(allocations);
 
+                // Restore stock before deleting allocations
+                if (allocations.Count > 0)
+                {
+                    await ApplyStock(allocations, -1, deletedBy, now);
+
+                    _dbContext.IssueStockAllocations.RemoveRange(allocations);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                // Delete issue details after allocations are deleted
+                if (details.Count > 0)
+                {
+                    _dbContext.IssueDetails.RemoveRange(details);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                // Soft delete issue master
                 issue.IsDeleted = true;
                 issue.IsActive = false;
                 issue.UpdatedBy = deletedBy;
                 issue.UpdatedAt = now;
 
+                _dbContext.IssueMaster.Remove(issue);
+
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
+
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                // Preserve the original exception if rollback also fails
+                try
+                {
+                    await transaction.RollbackAsync();
+                }
+                catch (Exception rollbackEx)
+                {
+                    // Log rollbackEx using your application's logger
+                }
+
+                // Log ex using your application's logger
                 throw;
             }
         }
