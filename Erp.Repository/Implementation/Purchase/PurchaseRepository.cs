@@ -328,23 +328,32 @@ namespace Erp.Repository.Implementation.Purchase
                 purchase.DeletedBy = deletedBy;
                 purchase.DeletedAt = now;
 
-                var details = await _dbContext.PurchaseDetails
-                    .Where(detail => detail.Purchase_Id == purchaseId && detail.DeletedAt == null)
-                    .ToListAsync();
-                foreach (var detail in details)
+
+                var detailscharge = await _dbContext.PurchaseCharges
+                                    .Where(x =>
+                                        x.Purchase_Id == purchase.Purchase_Id)
+                                    .ToListAsync();
+
+                if (detailscharge.Any())
                 {
-                    detail.DeletedBy = deletedBy;
-                    detail.DeletedAt = now;
+                    _dbContext.PurchaseCharges.RemoveRange(detailscharge);
                 }
 
-                var charges = await _dbContext.PurchaseCharges
-                    .Where(charge => charge.Purchase_Id == purchaseId && charge.DeletedAt == null)
-                    .ToListAsync();
-                foreach (var charge in charges)
+                var grndetails = await _dbContext.PurchaseDetails
+                        .Where(x =>
+                            x.Purchase_Id == purchase.Purchase_Id)
+                        .ToListAsync();
+
+                if (grndetails.Any())
                 {
-                    charge.DeletedBy = deletedBy;
-                    charge.DeletedAt = now;
+                    _dbContext.PurchaseDetails.RemoveRange(grndetails);
                 }
+
+                // ============================
+                // Delete Outward Master
+                // ============================
+
+                _dbContext.PurchaseMaster.Remove(purchase);
 
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();

@@ -257,28 +257,60 @@ namespace Erp.Repository.Implementation.Production
 
         public async Task<bool> Delete(Guid outwardId, string? deletedBy)
         {
-            var outward = await _dbContext.Outward
-                .FirstOrDefaultAsync(item => item.Outward_Id == outwardId && item.DeletedAt == null);
-            if (outward == null)
+            await using var transaction =
+          await _dbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                var qtn = await _dbContext.Outward
+                .FirstOrDefaultAsync(x =>
+                    x.Outward_Id == outwardId);
+
+            if (qtn == null)
             {
                 return false;
             }
 
-            var now = DateTime.UtcNow;
-            outward.DeletedBy = deletedBy;
-            outward.DeletedAt = now;
+            // ============================
+            // Delete Outward Details
+            // ============================
 
             var details = await _dbContext.OutwardDetails
-                .Where(detail => detail.Outward_Id == outwardId && detail.DeletedAt == null)
+                .Where(x =>
+                    x.Outward_Id == outwardId)
                 .ToListAsync();
-            foreach (var detail in details)
+
+            if (details.Any())
             {
-                detail.DeletedBy = deletedBy;
-                detail.DeletedAt = now;
+                _dbContext.OutwardDetails.RemoveRange(details);
             }
 
+            // ============================
+            // Delete Outward Master
+            // ============================
+
+            _dbContext.Outward.Remove(qtn);
+
+            // ============================
+            // Save
+            // ============================
+
             await _dbContext.SaveChangesAsync();
+
+            // ============================
+            // Commit
+            // ============================
+
+            await transaction.CommitAsync();
+
             return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         private async Task ValidateAvailableQuantities(

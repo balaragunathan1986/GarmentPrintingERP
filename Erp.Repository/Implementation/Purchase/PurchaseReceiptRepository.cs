@@ -380,19 +380,23 @@ namespace Erp.Repository.Implementation.Purchase
                         "Stock from this receipt has already been used; the receipt cannot be deleted.");
                 }
 
-                var now = DateTime.UtcNow;
-                foreach (var detail in details)
-                {
-                    if (purchaseDetails.TryGetValue(detail.Purchase_Detail_Id, out var purchaseDetail))
-                    {
-                        purchaseDetail.Received_Qty = Math.Max(0, purchaseDetail.Received_Qty - detail.Received_Qty);
-                        purchaseDetail.UpdatedBy = deletedBy;
-                        purchaseDetail.UpdatedAt = now;
-                    }
+                var now = DateTime.UtcNow;   
 
-                    detail.DeletedBy = deletedBy;
-                    detail.DeletedAt = now;
+                var grndetails = await _dbContext.PurchaseReceiptDetails
+                                     .Where(x =>
+                                         x.PurchaseReceipt_Id == receipt.PurchaseReceipt_Id)
+                                     .ToListAsync();
+
+                if (grndetails.Any())
+                {
+                    _dbContext.PurchaseReceiptDetails.RemoveRange(grndetails);
                 }
+
+                // ============================
+                // Delete Outward Master
+                // ============================
+
+                _dbContext.PurchaseReceiptMaster.Remove(receipt);
 
                 foreach (var stock in stockRows)
                 {
