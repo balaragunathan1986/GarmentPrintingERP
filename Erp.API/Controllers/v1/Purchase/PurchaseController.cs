@@ -134,7 +134,7 @@ namespace Erp.API.Controllers.v1.Purchase
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, "Purchase not found."));
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, "Purchase, detail, or charge not found."));
             }
             catch (Exception ex)
             {

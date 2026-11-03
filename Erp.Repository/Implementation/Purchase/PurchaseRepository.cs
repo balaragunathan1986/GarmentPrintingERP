@@ -281,24 +281,24 @@ namespace Erp.Repository.Implementation.Purchase
                 var existingDetails = await _dbContext.PurchaseDetails
                     .Where(detail => detail.Purchase_Id == purchase.Purchase_Id && detail.DeletedAt == null)
                     .ToListAsync();
-                foreach (var detail in existingDetails)
-                {
-                    detail.DeletedBy = source.UpdatedBy;
-                    detail.DeletedAt = now;
-                }
 
                 var existingCharges = await _dbContext.PurchaseCharges
                     .Where(charge => charge.Purchase_Id == purchase.Purchase_Id && charge.DeletedAt == null)
                     .ToListAsync();
-                foreach (var charge in existingCharges)
-                {
-                    charge.DeletedBy = source.UpdatedBy;
-                    charge.DeletedAt = now;
-                }
 
                 var auditUser = source.UpdatedBy ?? purchase.CreatedBy;
-                await AddDetails(purchase.Purchase_Id, model.Purchase_Details, auditUser, now);
-                await AddCharges(purchase.Purchase_Id, model.Purchase_Charges, auditUser, now);
+                UpdateDetails(
+                    purchase.Purchase_Id,
+                    existingDetails,
+                    model.Purchase_Details,
+                    auditUser,
+                    now);
+                UpdateCharges(
+                    purchase.Purchase_Id,
+                    existingCharges,
+                    model.Purchase_Charges,
+                    auditUser,
+                    now);
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -363,6 +363,149 @@ namespace Erp.Repository.Implementation.Purchase
             {
                 await transaction.RollbackAsync();
                 throw;
+            }
+        }
+
+        private void UpdateDetails(
+            Guid purchaseId,
+            IReadOnlyCollection<PurchaseDetailDTO> existingDetails,
+            IEnumerable<PurchaseDetailDTO> details,
+            string? updatedBy,
+            DateTime now)
+        {
+            var existingById = existingDetails.ToDictionary(detail => detail.Purchase_Detail_Id);
+            var existingByRowId = existingDetails.ToDictionary(detail => detail.Id);
+            var submittedIds = new HashSet<Guid>();
+
+            foreach (var source in details)
+            {
+                PurchaseDetailDTO detail;
+                var detailId = source.Purchase_Detail_Id;
+                if (detailId == Guid.Empty && source.Id > 0
+                    && existingByRowId.TryGetValue(source.Id, out var existingByRowIdDetail))
+                {
+                    detailId = existingByRowIdDetail.Purchase_Detail_Id;
+                }
+
+                if (detailId == Guid.Empty)
+                {
+                    if (source.Id > 0)
+                    {
+                        throw new KeyNotFoundException("Purchase detail record not found.");
+                    }
+
+                    detail = new PurchaseDetailDTO
+                    {
+                        Purchase_Detail_Id = Guid.NewGuid(),
+                        Purchase_Id = purchaseId,
+                        CreatedBy = updatedBy,
+                        CreatedAt = now
+                    };
+                    _dbContext.PurchaseDetails.Add(detail);
+                }
+                else
+                {
+                    if (!submittedIds.Add(detailId))
+                    {
+                        throw new InvalidOperationException("A purchase detail was submitted more than once.");
+                    }
+
+                    if (!existingById.TryGetValue(detailId, out detail!))
+                    {
+                        throw new KeyNotFoundException("Purchase detail record not found.");
+                    }
+
+                    detail.UpdatedBy = updatedBy;
+                    detail.UpdatedAt = now;
+                }
+
+                detail.Item_Id = source.Item_Id;
+                detail.UOM_Id = source.UOM_Id;
+                detail.Size_Id = source.Size_Id;
+                detail.Color_Id = source.Color_Id;
+                detail.Quantity = source.Quantity;
+                detail.Rate = source.Rate;
+                detail.Discount_Amount = source.Discount_Amount;
+                detail.Tax_Percent = source.Tax_Percent;
+                detail.Tax_Amount = source.Tax_Amount;
+                detail.Amount = source.Amount;
+                detail.Required_Date = source.Required_Date;
+                detail.Item_Remarks = source.Item_Remarks;
+            }
+
+            foreach (var detail in existingDetails.Where(detail =>
+                         !submittedIds.Contains(detail.Purchase_Detail_Id)))
+            {
+                detail.DeletedBy = updatedBy;
+                detail.DeletedAt = now;
+            }
+        }
+
+        private void UpdateCharges(
+            Guid purchaseId,
+            IReadOnlyCollection<PurchaseChargeDTO> existingCharges,
+            IEnumerable<PurchaseChargeDTO> charges,
+            string? updatedBy,
+            DateTime now)
+        {
+            var existingById = existingCharges.ToDictionary(charge => charge.Purchase_Charge_Id);
+            var existingByRowId = existingCharges.ToDictionary(charge => charge.Id);
+            var submittedIds = new HashSet<Guid>();
+
+            foreach (var source in charges)
+            {
+                PurchaseChargeDTO charge;
+                var chargeId = source.Purchase_Charge_Id;
+                if (chargeId == Guid.Empty && source.Id > 0
+                    && existingByRowId.TryGetValue(source.Id, out var existingByRowIdCharge))
+                {
+                    chargeId = existingByRowIdCharge.Purchase_Charge_Id;
+                }
+
+                if (chargeId == Guid.Empty)
+                {
+                    if (source.Id > 0)
+                    {
+                        throw new KeyNotFoundException("Purchase charge record not found.");
+                    }
+
+                    charge = new PurchaseChargeDTO
+                    {
+                        Purchase_Charge_Id = Guid.NewGuid(),
+                        Purchase_Id = purchaseId,
+                        CreatedBy = updatedBy,
+                        CreatedAt = now
+                    };
+                    _dbContext.PurchaseCharges.Add(charge);
+                }
+                else
+                {
+                    if (!submittedIds.Add(chargeId))
+                    {
+                        throw new InvalidOperationException("A purchase charge was submitted more than once.");
+                    }
+
+                    if (!existingById.TryGetValue(chargeId, out charge!))
+                    {
+                        throw new KeyNotFoundException("Purchase charge record not found.");
+                    }
+
+                    charge.UpdatedBy = updatedBy;
+                    charge.UpdatedAt = now;
+                }
+
+                charge.Charge_Id = source.Charge_Id;
+                charge.AddLessType = source.AddLessType;
+                charge.Percentage = source.Percentage;
+                charge.Amount = source.Amount;
+                charge.Remarks = source.Remarks;
+            }
+
+            foreach (var charge in existingCharges.Where(charge =>
+                         !submittedIds.Contains(charge.Purchase_Charge_Id)))
+            {
+                charge.DeletedBy = updatedBy;
+                charge.DeletedAt = now;
             }
         }
 
