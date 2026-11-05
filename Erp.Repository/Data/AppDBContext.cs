@@ -34,6 +34,7 @@ namespace Erp.Repository.Data
         public DbSet<DesignationDTO> Designation { get; set; }
         public DbSet<EmployeeDTO> Employee { get; set; }
         public DbSet<PaymentModeDTO> PaymentMode { get; set; }
+        public DbSet<GeneralSettingsDTO> GeneralSettings { get; set; }
         public DbSet<PaymentTermsDTO> PaymentTerms { get; set; }
         public DbSet<CompanyDTO> Company { get; set; }
         public DbSet<BankDetailsDTO> BankDetails { get; set; }
@@ -113,6 +114,7 @@ namespace Erp.Repository.Data
             modelBuilder.Entity<DesignationDTO>();
             modelBuilder.Entity<EmployeeDTO>();
             modelBuilder.Entity<PaymentModeDTO>();
+            modelBuilder.Entity<GeneralSettingsDTO>();
             modelBuilder.Entity<CompanyDTO>();
             modelBuilder.Entity<BankDetailsDTO>();
             modelBuilder.Entity<SupplierDTO>();
