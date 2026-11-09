@@ -17,6 +17,11 @@ namespace Erp.Domain.Model.Production
         public int? ApprovedBy { get; set; }
         public DateTime? ApprovedDate { get; set; }
         public string ApprovalStatus { get; set; } = "Pending";
+        public int Validity_Days { get; set; } = 30;
+        public DateTime? Valid_Until { get; set; }
+        public string Conversion_Status { get; set; } = "NotConverted";
+        public Guid? Converted_Invoice_Id { get; set; }
+        public DateTime? Converted_Date { get; set; }
         public string? Remarks { get; set; }
         public List<QuotationDetailDTO> Quotation_Details { get; set; } = new();
     }

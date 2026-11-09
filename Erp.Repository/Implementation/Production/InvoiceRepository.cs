@@ -1,4 +1,5 @@
 using Erp.Domain.DTO.ProductionAndLogistics;
+using Erp.Domain.Model.Production;
 using Erp.Repository.Data;
 using Erp.Repository.Interfaces.Production;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +53,9 @@ namespace Erp.Repository.Implementation.Production
                     SubTotal = invoice.SubTotal,
                     AddLessTotal = invoice.AddLessTotal,
                     NetAmount = invoice.NetAmount,
-                    ApprovalStatus = invoice.ApprovalStatus
+                    ApprovalStatus = invoice.ApprovalStatus,
+                    Invoice_Source = invoice.Invoice_Source,
+                    Quotation_Id = invoice.Quotation_Id
                 };
 
             return await query.ToListAsync();
@@ -84,7 +87,9 @@ namespace Erp.Repository.Implementation.Production
                     UpdatedDate = master.UpdatedDate,
                     ApprovedBy = master.ApprovedBy,
                     ApprovedDate = master.ApprovedDate,
-                    ApprovalStatus = master.ApprovalStatus
+                    ApprovalStatus = master.ApprovalStatus,
+                    Invoice_Source = master.Invoice_Source,
+                    Quotation_Id = master.Quotation_Id
                 }).FirstOrDefaultAsync();
 
             if (invoice == null)
@@ -95,7 +100,8 @@ namespace Erp.Repository.Implementation.Production
             invoice.Details = await (
                 from detail in _dbContext.InvoiceDetails.AsNoTracking()
                 join outward in _dbContext.Outward.AsNoTracking()
-                    on detail.Outward_ID equals outward.Outward_Id
+                    on detail.Outward_ID equals outward.Outward_Id into outwards
+                from outward in outwards.DefaultIfEmpty()
                 join item in _dbContext.Item.AsNoTracking()
                     on detail.Item_ID equals item.Item_Id
                 join color in _dbContext.Color.AsNoTracking()
@@ -110,7 +116,7 @@ namespace Erp.Repository.Implementation.Production
                     Invoice_Id = detail.Invoice_Id,
                     Outward_ID = detail.Outward_ID,
                     OutwardDetail_Id = detail.OutwardDetail_Id,
-                    OutwardNo = outward.OutwardNo,
+                    OutwardNo = outward == null ? string.Empty : outward.OutwardNo,
                     Item_ID = detail.Item_ID,
                     ItemName = item.Item_Name,
                     Color_ID = detail.Color_ID,
@@ -151,6 +157,7 @@ namespace Erp.Repository.Implementation.Production
             try
             {
                 var now = DateTime.UtcNow;
+                await PrepareOutwardReferences(model);
                 var invoiceId = model.Invoice_Id == Guid.Empty ? Guid.NewGuid() : model.Invoice_Id;
                 var invoice = new InvoiceMasterDTO
                 {
@@ -167,11 +174,28 @@ namespace Erp.Repository.Implementation.Production
                     CreatedDate = model.CreatedDate ?? now,
                     ApprovedBy = model.ApprovedBy,
                     ApprovedDate = model.ApprovedDate,
-                    ApprovalStatus = model.ApprovalStatus
+                    ApprovalStatus = model.ApprovalStatus,
+                    Invoice_Source = model.Invoice_Source,
+                    Quotation_Id = model.Quotation_Id
                 };
 
                 _dbContext.InvoiceMaster.Add(invoice);
                 await _dbContext.SaveChangesAsync();
+
+                if (invoice.Quotation_Id.HasValue)
+                {
+                    var claimed = await _dbContext.QuotationMaster
+                        .Where(quotation => quotation.Quotation_Id == invoice.Quotation_Id
+                            && quotation.DeletedAt == null && quotation.Converted_Invoice_Id == null)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(quotation => quotation.Conversion_Status, "Converted")
+                            .SetProperty(quotation => quotation.Converted_Invoice_Id, invoice.Invoice_Id)
+                            .SetProperty(quotation => quotation.Converted_Date, now));
+                    if (claimed != 1)
+                    {
+                        throw new ConversionConflictException("Quotation does not exist or is already converted.");
+                    }
+                }
 
                 await AddDetails(invoice.Invoice_Id, model.Details ?? new(), model.CreatedBy, now);
                 await AddCharges(invoice.Invoice_Id, model.Charges ?? new(), model.CreatedBy, now);
@@ -192,13 +216,21 @@ namespace Erp.Repository.Implementation.Production
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                var invoice = await _dbContext.InvoiceMaster.FirstOrDefaultAsync(item =>
-                    item.Invoice_Id == model.Invoice_Id && item.DeletedDate == null);
+                var invoice = await _dbContext.InvoiceMaster
+                    .FromSqlInterpolated($"SELECT * FROM dbo.Invoice_Master WITH (UPDLOCK, ROWLOCK) WHERE Invoice_Id = {model.Invoice_Id}")
+                    .FirstOrDefaultAsync(item => item.DeletedDate == null);
                 if (invoice == null)
                 {
                     throw new KeyNotFoundException("Invoice record not found.");
                 }
 
+                await _dbContext.Entry(invoice).ReloadAsync();
+                if (invoice.Invoice_Source != model.Invoice_Source || invoice.Quotation_Id != model.Quotation_Id)
+                {
+                    throw new ConversionConflictException("The invoice source and quotation cannot be changed after creation.");
+                }
+
+                await PrepareOutwardReferences(model);
                 var now = DateTime.UtcNow;
                 invoice.InvoiceNo = model.InvoiceNo;
                 invoice.InvoiceDate = model.InvoiceDate ?? invoice.InvoiceDate ?? now;
@@ -240,12 +272,28 @@ namespace Erp.Repository.Implementation.Production
                 // ============================
 
                 var qtn = await _dbContext.InvoiceMaster
-                    .FirstOrDefaultAsync(x =>
-                        x.Invoice_Id == invoiceId);
+                    .FromSqlInterpolated($"SELECT * FROM dbo.Invoice_Master WITH (UPDLOCK, ROWLOCK) WHERE Invoice_Id = {invoiceId}")
+                    .FirstOrDefaultAsync();
 
                 if (qtn == null)
                 {
                     return false;
+                }
+
+                await _dbContext.Entry(qtn).ReloadAsync();
+                if (qtn.Quotation_Id.HasValue)
+                {
+                    var cleared = await _dbContext.QuotationMaster
+                        .Where(quotation => quotation.Quotation_Id == qtn.Quotation_Id
+                            && quotation.Converted_Invoice_Id == invoiceId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(quotation => quotation.Conversion_Status, "NotConverted")
+                            .SetProperty(quotation => quotation.Converted_Invoice_Id, (Guid?)null)
+                            .SetProperty(quotation => quotation.Converted_Date, (DateTime?)null));
+                    if (cleared != 1)
+                    {
+                        throw new ConversionConflictException("The linked quotation does not reference this invoice.");
+                    }
                 }
 
                 // ============================
@@ -300,6 +348,54 @@ namespace Erp.Repository.Implementation.Production
             {
                 await transaction.RollbackAsync();
                 throw;
+            }
+        }
+
+        private async Task PrepareOutwardReferences(InvoiceMasterDTO invoice)
+        {
+            if (invoice.Invoice_Source == "Quotation")
+            {
+                foreach (var detail in invoice.Details)
+                {
+                    detail.Outward_ID = null;
+                    detail.OutwardDetail_Id = null;
+                }
+                return;
+            }
+
+            var outwardIds = invoice.Details.Where(detail => detail.Outward_ID.HasValue)
+                .Select(detail => detail.Outward_ID!.Value).Distinct().ToArray();
+            var detailIds = invoice.Details.Where(detail => detail.OutwardDetail_Id.HasValue)
+                .Select(detail => detail.OutwardDetail_Id!.Value).Distinct().ToArray();
+
+            var existingOutwards = await _dbContext.Outward.AsNoTracking()
+                .Where(outward => outwardIds.Contains(outward.Outward_Id))
+                .Select(outward => outward.Outward_Id)
+                .ToListAsync();
+            var existingDetails = await _dbContext.OutwardDetails.AsNoTracking()
+                .Where(detail => detailIds.Contains(detail.OutwardDetail_Id))
+                .Select(detail => new { detail.OutwardDetail_Id, detail.Outward_Id })
+                .ToListAsync();
+
+            foreach (var detail in invoice.Details)
+            {
+                if (detail.Outward_ID.HasValue && !existingOutwards.Contains(detail.Outward_ID.Value))
+                {
+                    throw new InvalidInvoiceOutwardException($"Outward_ID {detail.Outward_ID} does not exist.");
+                }
+
+                if (detail.OutwardDetail_Id.HasValue)
+                {
+                    var outwardDetail = existingDetails.FirstOrDefault(item => item.OutwardDetail_Id == detail.OutwardDetail_Id);
+                    if (outwardDetail == null)
+                    {
+                        throw new InvalidInvoiceOutwardException($"OutwardDetail_Id {detail.OutwardDetail_Id} does not exist.");
+                    }
+                    if (detail.Outward_ID.HasValue && outwardDetail.Outward_Id != detail.Outward_ID.Value)
+                    {
+                        throw new InvalidInvoiceOutwardException($"OutwardDetail_Id {detail.OutwardDetail_Id} does not belong to Outward_ID {detail.Outward_ID}.");
+                    }
+                }
             }
         }
 

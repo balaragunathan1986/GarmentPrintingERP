@@ -29,6 +29,18 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public int? ApprovedBy { get; set; }
         public DateTime? ApprovedDate { get; set; }
         public string ApprovalStatus { get; set; } = "Pending";
+        [JsonPropertyName("invoiceSource")]
+        public string Invoice_Source { get; set; } = "Manual";
+        public Guid? Quotation_Id { get; set; }
+
+        [NotMapped]
+        [JsonPropertyName("Invoice_Source")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? InvoiceSourceInput
+        {
+            get => null;
+            set => Invoice_Source = value!;
+        }
 
         [NotMapped]
         public List<InvoiceDetailDTO> Details { get; set; } = new();
@@ -60,8 +72,8 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public int InvoiceDetailID { get; set; }
         public Guid InvoiceDetail_Id { get; set; }
         public Guid Invoice_Id { get; set; }
-        public Guid Outward_ID { get; set; }
-        public Guid OutwardDetail_Id { get; set; }
+        public Guid? Outward_ID { get; set; }
+        public Guid? OutwardDetail_Id { get; set; }
         public Guid Item_ID { get; set; }
         public Guid Color_ID { get; set; }
         public Guid Size_ID { get; set; }
@@ -126,5 +138,8 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public decimal AddLessTotal { get; set; }
         public decimal NetAmount { get; set; }
         public string ApprovalStatus { get; set; } = "Pending";
+        [JsonPropertyName("invoiceSource")]
+        public string Invoice_Source { get; set; } = "Manual";
+        public Guid? Quotation_Id { get; set; }
     }
 }

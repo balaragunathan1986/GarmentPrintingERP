@@ -79,6 +79,12 @@ namespace Erp.API.Controllers.v1.Production
                 return BadRequest(ApiResponse<string>.ErrorResponse(null, "Invalid request data."));
             }
 
+            var validationError = ValidateValidity(model);
+            if (validationError != null)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(null, validationError));
+            }
+
             try
             {
                 var quotation = await _quotationService.Save(model);
@@ -97,6 +103,12 @@ namespace Erp.API.Controllers.v1.Production
             if (!ModelState.IsValid)
             {
                 return BadRequest(ApiResponse<string>.ErrorResponse(null, "Invalid request data."));
+            }
+
+            var validationError = ValidateValidity(model);
+            if (validationError != null)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(null, validationError));
             }
 
             try
@@ -125,11 +137,26 @@ namespace Erp.API.Controllers.v1.Production
                     ? Ok(ApiResponse<object>.SuccessResponse(true, "Quotation deleted successfully..!"))
                     : NotFound(ApiResponse<string>.ErrorResponse(null, "Quotation not found."));
             }
+            catch (ConversionConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(null, ex.Message));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting quotation {QuotationId}.", Quotation_Id);
                 return StatusCode(500, ApiResponse<string>.ErrorResponse(null, "Failed to delete quotation."));
             }
+        }
+
+        private static string? ValidateValidity(QuotationModel model)
+        {
+            if (model.Validity_Days < 0 ||
+                (model.Quotation_Date.HasValue &&
+                 model.Validity_Days > (DateTime.MaxValue.Date - model.Quotation_Date.Value.Date).TotalDays))
+            {
+                return "Validity_Days must be non-negative and produce a valid date.";
+            }
+            return null;
         }
     }
 }

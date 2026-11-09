@@ -55,6 +55,11 @@ namespace Erp.Repository.Implementation.Production
                     ApprovedBy = quotation.ApprovedBy,
                     ApprovedDate = quotation.ApprovedDate,
                     ApprovalStatus = quotation.ApprovalStatus,
+                    Validity_Days = quotation.Validity_Days,
+                    Valid_Until = quotation.Valid_Until,
+                    Conversion_Status = quotation.Conversion_Status,
+                    Converted_Invoice_Id = quotation.Converted_Invoice_Id,
+                    Converted_Date = quotation.Converted_Date,
                     Remarks = quotation.Remarks,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
@@ -88,6 +93,11 @@ namespace Erp.Repository.Implementation.Production
                     ApprovedBy = master.ApprovedBy,
                     ApprovedDate = master.ApprovedDate,
                     ApprovalStatus = master.ApprovalStatus,
+                    Validity_Days = master.Validity_Days,
+                    Valid_Until = master.Valid_Until,
+                    Conversion_Status = master.Conversion_Status,
+                    Converted_Invoice_Id = master.Converted_Invoice_Id,
+                    Converted_Date = master.Converted_Date,
                     Remarks = master.Remarks,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
@@ -158,6 +168,8 @@ namespace Erp.Repository.Implementation.Production
                     ApprovedBy = model.ApprovedBy,
                     ApprovedDate = model.ApprovedDate,
                     ApprovalStatus = string.IsNullOrWhiteSpace(model.ApprovalStatus) ? "Pending" : model.ApprovalStatus,
+                    Validity_Days = model.Validity_Days,
+                    Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days),
                     Remarks = model.Remarks
                 };
 
@@ -216,6 +228,8 @@ namespace Erp.Repository.Implementation.Production
                 quotation.ApprovedBy = model.ApprovedBy;
                 quotation.ApprovedDate = model.ApprovedDate;
                 quotation.ApprovalStatus = string.IsNullOrWhiteSpace(model.ApprovalStatus) ? "Pending" : model.ApprovalStatus;
+                quotation.Validity_Days = model.Validity_Days;
+                quotation.Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days);
                 quotation.Remarks = model.Remarks;
 
                 var existingDetails = await _dbContext.QuotationDetails
@@ -285,12 +299,18 @@ namespace Erp.Repository.Implementation.Production
                 // ============================
 
                 var qtn = await _dbContext.QuotationMaster
-                    .FirstOrDefaultAsync(x =>
-                        x.Quotation_Id == quotationId);
+                    .FromSqlInterpolated($"SELECT * FROM dbo.Quotation_Master WITH (UPDLOCK, ROWLOCK) WHERE Quotation_Id = {quotationId}")
+                    .FirstOrDefaultAsync();
 
                 if (qtn == null)
                 {
                     return false;
+                }
+
+                await _dbContext.Entry(qtn).ReloadAsync();
+                if (qtn.Converted_Invoice_Id.HasValue)
+                {
+                    throw new ConversionConflictException("A converted quotation cannot be deleted while its invoice exists.");
                 }
 
                 // ============================

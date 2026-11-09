@@ -1,5 +1,6 @@
 using Erp.Domain.DTO.ProductionAndLogistics;
 using Erp.Domain.Model;
+using Erp.Domain.Model.Production;
 using Erp.Services.Interfaces.Production;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -90,6 +91,14 @@ namespace Erp.API.Controllers.v1.Production
                 var invoice = await _invoiceService.Save(model);
                 return Ok(ApiResponse<object>.SuccessResponse(invoice, "Invoice saved successfully."));
             }
+            catch (ConversionConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(null, ex.Message));
+            }
+            catch (InvalidInvoiceOutwardException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(null, ex.Message));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving invoice.");
@@ -125,6 +134,14 @@ namespace Erp.API.Controllers.v1.Production
             {
                 return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, "Invoice not found."));
             }
+            catch (ConversionConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(null, ex.Message));
+            }
+            catch (InvalidInvoiceOutwardException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(null, ex.Message));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating invoice {InvoiceId}.", model.Invoice_Id);
@@ -141,6 +158,10 @@ namespace Erp.API.Controllers.v1.Production
                 return deleted
                     ? Ok(ApiResponse<object>.SuccessResponse(true, "Invoice deleted successfully."))
                     : NotFound(ApiResponse<string>.ErrorResponse(null, "Invoice not found."));
+            }
+            catch (ConversionConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(null, ex.Message));
             }
             catch (Exception ex)
             {
@@ -159,6 +180,17 @@ namespace Erp.API.Controllers.v1.Production
             if (!ApprovalStatuses.Contains(invoice.ApprovalStatus, StringComparer.Ordinal))
             {
                 return "ApprovalStatus must be Pending, Approved, Rejected, or Cancelled.";
+            }
+
+            if (invoice.Invoice_Source is not ("Manual" or "Quotation"))
+            {
+                return "Invoice_Source must be Manual or Quotation.";
+            }
+
+            if ((invoice.Invoice_Source == "Quotation" && (!invoice.Quotation_Id.HasValue || invoice.Quotation_Id == Guid.Empty))
+                || (invoice.Invoice_Source == "Manual" && invoice.Quotation_Id.HasValue))
+            {
+                return "Quotation_Id is required for quotation invoices and must be null for manual invoices.";
             }
 
             if (invoice.Details.Any(detail =>
