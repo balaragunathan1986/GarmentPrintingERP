@@ -453,6 +453,15 @@ BEGIN
         [OutwardQty] DECIMAL(18,3) NOT NULL
             DEFAULT 0,
 
+        [ExcessQty] DECIMAL(18,2) NULL
+            DEFAULT (0),
+
+        [ShortageQty] DECIMAL(18,2) NULL
+            DEFAULT (0),
+
+        [DamagedQty] DECIMAL(18,2) NULL
+            DEFAULT (0),
+
         -- Balance Quantity
         [BalQty] AS ([InwardQty] - [OutwardQty]) PERSISTED,
 

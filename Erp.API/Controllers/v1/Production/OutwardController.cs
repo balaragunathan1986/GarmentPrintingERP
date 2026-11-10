@@ -112,7 +112,12 @@ namespace Erp.API.Controllers.v1.Production
 
             try
             {
-                var outward = await _outwardService.Save(model);
+                var existingOutward = model.Outward_Id == Guid.Empty
+                    ? null
+                    : await _outwardService.GetOutward(model.Outward_Id);
+                var outward = existingOutward?.OutwardID > 0
+                    ? await _outwardService.Update(model)
+                    : await _outwardService.Save(model);
                 return Ok(ApiResponse<object>.SuccessResponse(outward, "Outward saved successfully..!"));
             }
             catch (ArgumentException ex)

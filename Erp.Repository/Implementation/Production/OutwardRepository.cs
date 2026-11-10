@@ -78,8 +78,18 @@ namespace Erp.Repository.Implementation.Production
                     Size_ID = detail.Size_ID,
                     InwardQty = detail.InwardQty,
                     OutwardQty = detail.OutwardQty,
+                    ExcessQty = detail.ExcessQty ?? 0,
+                    ShortageQty = detail.ShortageQty ?? 0,
+                    DamagedQty = detail.DamagedQty ?? 0,
                     BalQty = detail.BalQty,
                     BalanceQty = detail.InwardQty - detail.OutwardQty,
+                    AvailableQty = detail.InwardQty - (_dbContext.OutwardDetails
+                        .Where(allocation => allocation.Inward_Item_Id == detail.Inward_Item_Id
+                            && allocation.DeletedAt == null
+                            && _dbContext.Outward.Any(outward => outward.Outward_Id == allocation.Outward_Id
+                                && outward.DeletedAt == null))
+                        .Select(allocation => (decimal?)allocation.OutwardQty)
+                        .Sum() ?? 0),
                     Remarks = detail.Remarks,
                     CreatedBy = detail.CreatedBy,
                     CreatedAt = detail.CreatedAt,
@@ -142,6 +152,13 @@ namespace Erp.Repository.Implementation.Production
                     InwardQty = inwardItem.Quantity,
                     OutwardQty = 0,
                     BalanceQty = inwardItem.Quantity - _dbContext.OutwardDetails
+                        .Where(detail => detail.Inward_Item_Id == inwardItem.Inward_Item_Id
+                            && detail.DeletedAt == null
+                            && _dbContext.Outward.Any(outward => outward.Outward_Id == detail.Outward_Id
+                                && outward.DeletedAt == null))
+                        .Select(detail => (decimal?)detail.OutwardQty)
+                        .Sum() ?? 0,
+                    AvailableQty = inwardItem.Quantity - _dbContext.OutwardDetails
                         .Where(detail => detail.Inward_Item_Id == inwardItem.Inward_Item_Id
                             && detail.DeletedAt == null
                             && _dbContext.Outward.Any(outward => outward.Outward_Id == detail.Outward_Id
@@ -234,15 +251,38 @@ namespace Erp.Repository.Implementation.Production
                 var existingDetails = await _dbContext.OutwardDetails
                     .Where(detail => detail.Outward_Id == outward.Outward_Id && detail.DeletedAt == null)
                     .ToListAsync();
-                foreach (var detail in existingDetails)
+                var unmatchedDetails = existingDetails.ToList();
+                var updatedBy = model.UpdatedBy ?? model.CreatedBy ?? string.Empty;
+
+                foreach (var detail in details)
                 {
-                    detail.DeletedBy = model.UpdatedBy ?? model.CreatedBy;
-                    detail.DeletedAt = now;
+                    var existingDetail = detail.OutwardDetailID > 0
+                        ? unmatchedDetails.FirstOrDefault(existing =>
+                            existing.OutwardDetailID == detail.OutwardDetailID)
+                        : null;
+                    existingDetail ??= detail.OutwardDetail_Id != Guid.Empty
+                        ? unmatchedDetails.FirstOrDefault(existing =>
+                            existing.OutwardDetail_Id == detail.OutwardDetail_Id)
+                        : null;
+                    existingDetail ??= unmatchedDetails.FirstOrDefault(existing =>
+                        existing.Inward_Item_Id == detail.Inward_Item_Id);
+
+                    if (existingDetail == null)
+                    {
+                        throw new ArgumentException(
+                            "Outward detail does not match an existing row; updates cannot add detail rows.");
+                    }
+
+                    UpdateDetail(existingDetail, detail, outward.Inward_Id, updatedBy, now);
+                    unmatchedDetails.Remove(existingDetail);
                 }
 
-                await _dbContext.OutwardDetails.AddRangeAsync(details.Select(detail => CreateDetail(
-                    detail, outward.Outward_Id, outward.Inward_Id,
-                    model.UpdatedBy ?? model.CreatedBy ?? string.Empty, now)));
+                foreach (var removedDetail in unmatchedDetails)
+                {
+                    removedDetail.DeletedBy = updatedBy;
+                    removedDetail.DeletedAt = now;
+                }
+
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -382,10 +422,35 @@ namespace Erp.Repository.Implementation.Production
                 Size_ID = detail.Size_ID,
                 InwardQty = detail.InwardQty,
                 OutwardQty = detail.OutwardQty,
+                ExcessQty = detail.ExcessQty ?? 0,
+                ShortageQty = detail.ShortageQty ?? 0,
+                DamagedQty = detail.DamagedQty ?? 0,
                 Remarks = detail.Remarks,
                 CreatedBy = createdBy,
                 CreatedAt = now
             };
+        }
+
+        private static void UpdateDetail(
+            OutwardDetailDTO existingDetail,
+            OutwardDetailDTO detail,
+            Guid inwardId,
+            string updatedBy,
+            DateTime now)
+        {
+            existingDetail.Inward_ID = inwardId;
+            existingDetail.Inward_Item_Id = detail.Inward_Item_Id;
+            existingDetail.Item_ID = detail.Item_ID;
+            existingDetail.Color_ID = detail.Color_ID;
+            existingDetail.Size_ID = detail.Size_ID;
+            existingDetail.InwardQty = detail.InwardQty;
+            existingDetail.OutwardQty = detail.OutwardQty;
+            existingDetail.ExcessQty = detail.ExcessQty ?? 0;
+            existingDetail.ShortageQty = detail.ShortageQty ?? 0;
+            existingDetail.DamagedQty = detail.DamagedQty ?? 0;
+            existingDetail.Remarks = detail.Remarks;
+            existingDetail.UpdatedBy = updatedBy;
+            existingDetail.UpdatedAt = now;
         }
     }
 }

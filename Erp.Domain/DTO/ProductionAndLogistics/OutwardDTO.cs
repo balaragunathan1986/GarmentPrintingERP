@@ -42,6 +42,9 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public Guid Size_ID { get; set; }
         public decimal InwardQty { get; set; }
         public decimal OutwardQty { get; set; }
+        public decimal? ExcessQty { get; set; }
+        public decimal? ShortageQty { get; set; }
+        public decimal? DamagedQty { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public decimal BalQty { get; set; }
@@ -50,6 +53,9 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
 
         [NotMapped]
         public decimal BalanceQty { get; set; }
+
+        [NotMapped]
+        public decimal AvailableQty { get; set; }
 
         [NotMapped]
         public string? Item_Name { get; set; }
