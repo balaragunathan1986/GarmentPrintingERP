@@ -82,13 +82,13 @@ namespace Erp.Repository.Implementation.Production
                     ShortageQty = detail.ShortageQty ?? 0,
                     DamagedQty = detail.DamagedQty ?? 0,
                     BalQty = detail.BalQty,
-                    BalanceQty = detail.InwardQty - detail.OutwardQty,
+                    BalanceQty = detail.InwardQty - detail.OutwardQty - (detail.ShortageQty ?? 0) - (detail.DamagedQty ?? 0),
                     AvailableQty = detail.InwardQty - (_dbContext.OutwardDetails
                         .Where(allocation => allocation.Inward_Item_Id == detail.Inward_Item_Id
                             && allocation.DeletedAt == null
                             && _dbContext.Outward.Any(outward => outward.Outward_Id == allocation.Outward_Id
                                 && outward.DeletedAt == null))
-                        .Select(allocation => (decimal?)allocation.OutwardQty)
+                        .Select(allocation => (decimal?)(allocation.OutwardQty + (allocation.ShortageQty ?? 0) + (allocation.DamagedQty ?? 0)))
                         .Sum() ?? 0),
                     Remarks = detail.Remarks,
                     CreatedBy = detail.CreatedBy,
@@ -118,7 +118,7 @@ namespace Erp.Repository.Implementation.Production
                 select new
                 {
                     InwardItemId = inwardAllocations.Key,
-                    Quantity = inwardAllocations.Sum(detail => detail.OutwardQty)
+                    Quantity = inwardAllocations.Sum(detail => detail.OutwardQty + (detail.ShortageQty ?? 0) + (detail.DamagedQty ?? 0))
                 }).ToDictionaryAsync(allocation => allocation.InwardItemId, allocation => allocation.Quantity);
 
             var inwardItems = await _dbContext.InwardItems.AsNoTracking().ToListAsync();
@@ -151,20 +151,20 @@ namespace Erp.Repository.Implementation.Production
                     Size_ID = inwardItem.Size_Id,
                     InwardQty = inwardItem.Quantity,
                     OutwardQty = 0,
-                    BalanceQty = inwardItem.Quantity - _dbContext.OutwardDetails
+                    BalanceQty = inwardItem.Quantity - (_dbContext.OutwardDetails
                         .Where(detail => detail.Inward_Item_Id == inwardItem.Inward_Item_Id
                             && detail.DeletedAt == null
                             && _dbContext.Outward.Any(outward => outward.Outward_Id == detail.Outward_Id
                                 && outward.DeletedAt == null))
-                        .Select(detail => (decimal?)detail.OutwardQty)
-                        .Sum() ?? 0,
-                    AvailableQty = inwardItem.Quantity - _dbContext.OutwardDetails
+                        .Select(detail => (decimal?)(detail.OutwardQty + (detail.ShortageQty ?? 0) + (detail.DamagedQty ?? 0)))
+                        .Sum() ?? 0),
+                    AvailableQty = inwardItem.Quantity - (_dbContext.OutwardDetails
                         .Where(detail => detail.Inward_Item_Id == inwardItem.Inward_Item_Id
                             && detail.DeletedAt == null
                             && _dbContext.Outward.Any(outward => outward.Outward_Id == detail.Outward_Id
                                 && outward.DeletedAt == null))
-                        .Select(detail => (decimal?)detail.OutwardQty)
-                        .Sum() ?? 0,
+                        .Select(detail => (decimal?)(detail.OutwardQty + (detail.ShortageQty ?? 0) + (detail.DamagedQty ?? 0)))
+                        .Sum() ?? 0),
                     Item_Name = item.Item_Name,
                     Color_Name = color.Color_Name,
                     Size_Name = size.Size_Name,
@@ -358,9 +358,14 @@ namespace Erp.Repository.Implementation.Production
             List<OutwardDetailDTO> details,
             Guid? excludeOutwardId)
         {
+            if (details.Any(detail => detail.OutwardQty < 0 || (detail.ShortageQty ?? 0) < 0 || (detail.DamagedQty ?? 0) < 0))
+            {
+                throw new ArgumentException("Outward, shortage, and damaged quantities cannot be negative.");
+            }
+
             var requested = details
                 .GroupBy(detail => detail.Inward_Item_Id)
-                .ToDictionary(group => group.Key, group => group.Sum(detail => detail.OutwardQty));
+                .ToDictionary(group => group.Key, group => group.Sum(detail => detail.OutwardQty + (detail.ShortageQty ?? 0) + (detail.DamagedQty ?? 0)));
             var itemIds = requested.Keys.ToList();
             var inwardItems = await _dbContext.InwardItems.AsNoTracking()
                 .Where(item => item.Inward_Id == inwardId && itemIds.Contains(item.Inward_Item_Id))
@@ -382,7 +387,7 @@ namespace Erp.Repository.Implementation.Production
                 select new
                 {
                     InwardItemId = allocations.Key,
-                    Quantity = allocations.Sum(detail => detail.OutwardQty)
+                    Quantity = allocations.Sum(detail => detail.OutwardQty + (detail.ShortageQty ?? 0) + (detail.DamagedQty ?? 0))
                 }).ToDictionaryAsync(allocation => allocation.InwardItemId, allocation => allocation.Quantity);
 
             foreach (var (itemId, quantity) in requested)
@@ -390,7 +395,7 @@ namespace Erp.Repository.Implementation.Production
                 var alreadyOutward = priorOutwards.GetValueOrDefault(itemId);
                 if (quantity < 0 || quantity + alreadyOutward > inwardItems[itemId].Quantity)
                 {
-                    throw new ArgumentException("Outward quantity cannot exceed the available inward balance.");
+                    throw new ArgumentException("Outward, shortage, and damaged quantities cannot exceed the available inward balance.");
                 }
 
                 var sourceItem = inwardItems[itemId];
