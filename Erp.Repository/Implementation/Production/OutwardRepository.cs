@@ -297,54 +297,34 @@ namespace Erp.Repository.Implementation.Production
 
         public async Task<bool> Delete(Guid outwardId, string? deletedBy)
         {
-            await using var transaction =
-          await _dbContext.Database.BeginTransactionAsync();
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
             try
             {
+                var outward = await _dbContext.Outward
+                    .FirstOrDefaultAsync(x => x.Outward_Id == outwardId);
 
-                var qtn = await _dbContext.Outward
-                .FirstOrDefaultAsync(x =>
-                    x.Outward_Id == outwardId);
+                if (outward == null)
+                {
+                    return false;
+                }
 
-            if (qtn == null)
-            {
-                return false;
-            }
+                var details = await _dbContext.OutwardDetails
+                    .Where(x => x.Outward_Id == outwardId)
+                    .ToListAsync();
 
-            // ============================
-            // Delete Outward Details
-            // ============================
+                if (details.Any())
+                {
+                    _dbContext.OutwardDetails.RemoveRange(details);
+                    await _dbContext.SaveChangesAsync();
+                }
 
-            var details = await _dbContext.OutwardDetails
-                .Where(x =>
-                    x.Outward_Id == outwardId)
-                .ToListAsync();
+                _dbContext.Outward.Remove(outward);
 
-            if (details.Any())
-            {
-                _dbContext.OutwardDetails.RemoveRange(details);
-            }
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
 
-            // ============================
-            // Delete Outward Master
-            // ============================
-
-            _dbContext.Outward.Remove(qtn);
-
-            // ============================
-            // Save
-            // ============================
-
-            await _dbContext.SaveChangesAsync();
-
-            // ============================
-            // Commit
-            // ============================
-
-            await transaction.CommitAsync();
-
-            return true;
+                return true;
             }
             catch
             {
