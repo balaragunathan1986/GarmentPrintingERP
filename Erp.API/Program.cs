@@ -227,11 +227,15 @@ if (!app.Environment.IsProduction())
 
 app.UseHttpsRedirection();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 //  ✅ Important: enable authentication before authorization
 app.UseCors("AllowCORS");
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();
