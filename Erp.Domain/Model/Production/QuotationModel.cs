@@ -30,5 +30,6 @@ namespace Erp.Domain.Model.Production
         public decimal? OverRate { get; set; }
         public decimal? FinalRatePerPcs { get; set; }
         public List<QuotationDetailDTO> Quotation_Details { get; set; } = new();
+        public List<QuotationChargeDTO>? Quotation_Charges { get; set; }
     }
 }

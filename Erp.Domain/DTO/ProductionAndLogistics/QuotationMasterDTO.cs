@@ -47,5 +47,8 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
 
         [NotMapped]
         public List<QuotationDetailDTO> Details { get; set; } = new();
+
+        [NotMapped]
+        public List<QuotationChargeDTO> Charges { get; set; } = new();
     }
 }

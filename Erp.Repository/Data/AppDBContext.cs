@@ -76,6 +76,7 @@ namespace Erp.Repository.Data
         public DbSet<PurchaseSupplierOutstandingDTO> PurchaseSupplierOutstanding { get; set; }
         public DbSet<QuotationMasterDTO> QuotationMaster { get; set; }
         public DbSet<QuotationDetailDTO> QuotationDetails { get; set; }
+        public DbSet<QuotationChargeDTO> QuotationCharges { get; set; }
         public DbSet<IssueMasterDTO> IssueMaster { get; set; }
         public DbSet<IssueDetailDTO> IssueDetails { get; set; }
         public DbSet<IssueStockAllocationDTO> IssueStockAllocations { get; set; }
@@ -124,6 +125,7 @@ namespace Erp.Repository.Data
             modelBuilder.Entity<StyleDTO>();
             modelBuilder.Entity<QuotationMasterDTO>();
             modelBuilder.Entity<QuotationDetailDTO>();
+            modelBuilder.Entity<QuotationChargeDTO>();
             modelBuilder.Entity<IssueMasterDTO>();
             modelBuilder.Entity<IssueDetailDTO>();
             modelBuilder.Entity<IssueStockAllocationDTO>();
