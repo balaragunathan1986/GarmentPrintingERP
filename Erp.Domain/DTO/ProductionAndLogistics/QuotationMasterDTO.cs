@@ -32,6 +32,12 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         [JsonPropertyName("convertedDate")]
         public DateTime? Converted_Date { get; set; }
         public string? Remarks { get; set; }
+        public decimal? ProfitPercentage { get; set; }
+        public decimal? Total { get; set; }
+        public decimal? OverHeads { get; set; }
+        public decimal? PcsPerRate { get; set; }
+        public decimal? OverRate { get; set; }
+        public decimal? FinalRatePerPcs { get; set; }
 
         [NotMapped]
         public string? Supplier_Name { get; set; }

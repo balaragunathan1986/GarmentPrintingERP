@@ -61,6 +61,12 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = quotation.Converted_Invoice_Id,
                     Converted_Date = quotation.Converted_Date,
                     Remarks = quotation.Remarks,
+                    ProfitPercentage = quotation.ProfitPercentage,
+                    Total = quotation.Total,
+                    OverHeads = quotation.OverHeads,
+                    PcsPerRate = quotation.PcsPerRate,
+                    OverRate = quotation.OverRate,
+                    FinalRatePerPcs = quotation.FinalRatePerPcs,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
                 }).ToListAsync();
@@ -99,6 +105,12 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = master.Converted_Invoice_Id,
                     Converted_Date = master.Converted_Date,
                     Remarks = master.Remarks,
+                    ProfitPercentage = master.ProfitPercentage,
+                    Total = master.Total,
+                    OverHeads = master.OverHeads,
+                    PcsPerRate = master.PcsPerRate,
+                    OverRate = master.OverRate,
+                    FinalRatePerPcs = master.FinalRatePerPcs,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
                 }).FirstOrDefaultAsync();
@@ -170,7 +182,13 @@ namespace Erp.Repository.Implementation.Production
                     ApprovalStatus = string.IsNullOrWhiteSpace(model.ApprovalStatus) ? "Pending" : model.ApprovalStatus,
                     Validity_Days = model.Validity_Days,
                     Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days),
-                    Remarks = model.Remarks
+                    Remarks = model.Remarks,
+                    ProfitPercentage = model.ProfitPercentage,
+                    Total = model.Total,
+                    OverHeads = model.OverHeads,
+                    PcsPerRate = model.PcsPerRate,
+                    OverRate = model.OverRate,
+                    FinalRatePerPcs = model.FinalRatePerPcs
                 };
 
                 await _dbContext.QuotationMaster.AddAsync(quotation);
@@ -231,6 +249,12 @@ namespace Erp.Repository.Implementation.Production
                 quotation.Validity_Days = model.Validity_Days;
                 quotation.Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days);
                 quotation.Remarks = model.Remarks;
+                quotation.ProfitPercentage = model.ProfitPercentage;
+                quotation.Total = model.Total;
+                quotation.OverHeads = model.OverHeads;
+                quotation.PcsPerRate = model.PcsPerRate;
+                quotation.OverRate = model.OverRate;
+                quotation.FinalRatePerPcs = model.FinalRatePerPcs;
 
                 var existingDetails = await _dbContext.QuotationDetails
                     .Where(detail => detail.Quotation_Id == model.Quotation_Id && detail.DeletedAt == null)

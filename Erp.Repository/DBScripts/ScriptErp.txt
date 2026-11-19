@@ -1999,3 +1999,10 @@ BEGIN
 
 END
 GO
+
+alter table Quotation_Master add [ProfitPercentage] [numeric](5, 2)  NULL
+alter table Quotation_Master add [Total] [numeric](15, 2)  NULL
+alter table Quotation_Master add [OverHeads] [numeric](15, 2)  NULL
+alter table Quotation_Master add [PcsPerRate] [numeric](15, 2)  NULL
+alter table Quotation_Master add [OverRate] [numeric](15, 2)  NULL
+alter table Quotation_Master add [FinalRatePerPcs] [numeric](15, 2)  NULL
