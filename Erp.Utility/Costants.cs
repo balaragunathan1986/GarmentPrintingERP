@@ -11,6 +11,7 @@ namespace Erp.Utility
       public static readonly string JobReceipt = "JR";
       public static readonly string ProductionBatch = "PB";
       public static readonly string ProductionCost = "PC";
+      public static readonly string MontlyExpenses = "ME";
       public static readonly string Despatch = "PD";
       public static readonly string PaymentVoucher = "PV";
       public static readonly string Billing = "BL";

@@ -62,6 +62,8 @@ namespace Erp.Repository.Data
         public DbSet<ProductionCostChargeDTO> ProductionCostCharges { get; set; }
         public DbSet<ProductionCostScreeningDTO> ProductionCostScreening { get; set; }
         public DbSet<ProductionCostListDTO> ProductionCostList { get; set; }
+        public DbSet<MontlyExpensesDTO> MontlyExpenses { get; set; }
+        public DbSet<MontlyExpensesDetailDTO> MontlyExpensesDetails { get; set; }
         public DbSet<DespatchDTO> Despatch { get; set; }
         public DbSet<PaymentVoucherDTO> PaymentVoucher { get; set; }
         public DbSet<BillingMasterDTO> BillingMaster { get; set; }
