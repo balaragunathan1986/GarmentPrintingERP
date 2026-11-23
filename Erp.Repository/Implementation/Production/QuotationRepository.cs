@@ -61,6 +61,12 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = quotation.Converted_Invoice_Id,
                     Converted_Date = quotation.Converted_Date,
                     Remarks = quotation.Remarks,
+                    ProfitPercentage = quotation.ProfitPercentage,
+                    Total = quotation.Total,
+                    OverHeads = quotation.OverHeads,
+                    PcsPerRate = quotation.PcsPerRate,
+                    OverRate = quotation.OverRate,
+                    FinalRatePerPcs = quotation.FinalRatePerPcs,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
                 }).ToListAsync();
@@ -99,6 +105,12 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = master.Converted_Invoice_Id,
                     Converted_Date = master.Converted_Date,
                     Remarks = master.Remarks,
+                    ProfitPercentage = master.ProfitPercentage,
+                    Total = master.Total,
+                    OverHeads = master.OverHeads,
+                    PcsPerRate = master.PcsPerRate,
+                    OverRate = master.OverRate,
+                    FinalRatePerPcs = master.FinalRatePerPcs,
                     Company_Name = company.Company_Name,
                     Supplier_Name = supplier.Supplier_Name
                 }).FirstOrDefaultAsync();
@@ -138,6 +150,31 @@ namespace Erp.Repository.Implementation.Production
                     Size_Name = size.Size_Name
                 }).ToListAsync();
 
+            quotation.Charges = await (
+                from chargeDetail in _dbContext.QuotationCharges.AsNoTracking()
+                join charge in _dbContext.Charge.AsNoTracking()
+                    on chargeDetail.Charge_Id equals charge.Charge_Id
+                where chargeDetail.Quotation_Id == quotationId && chargeDetail.DeletedAt == null
+                select new QuotationChargeDTO
+                {
+                    Id = chargeDetail.Id,
+                    Quotation_Charge_Id = chargeDetail.Quotation_Charge_Id,
+                    Quotation_Id = chargeDetail.Quotation_Id,
+                    Charge_Id = chargeDetail.Charge_Id,
+                    AddLessType = chargeDetail.AddLessType,
+                    RateType = chargeDetail.RateType,
+                    Percentage = chargeDetail.Percentage,
+                    Amount = chargeDetail.Amount,
+                    Remarks = chargeDetail.Remarks,
+                    CreatedBy = chargeDetail.CreatedBy,
+                    CreatedAt = chargeDetail.CreatedAt,
+                    UpdatedBy = chargeDetail.UpdatedBy,
+                    UpdatedAt = chargeDetail.UpdatedAt,
+                    DeletedBy = chargeDetail.DeletedBy,
+                    DeletedAt = chargeDetail.DeletedAt,
+                    ChargeName = charge.ChargeName ?? string.Empty
+                }).ToListAsync();
+
             return quotation;
         }
 
@@ -170,7 +207,13 @@ namespace Erp.Repository.Implementation.Production
                     ApprovalStatus = string.IsNullOrWhiteSpace(model.ApprovalStatus) ? "Pending" : model.ApprovalStatus,
                     Validity_Days = model.Validity_Days,
                     Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days),
-                    Remarks = model.Remarks
+                    Remarks = model.Remarks,
+                    ProfitPercentage = model.ProfitPercentage,
+                    Total = model.Total,
+                    OverHeads = model.OverHeads,
+                    PcsPerRate = model.PcsPerRate,
+                    OverRate = model.OverRate,
+                    FinalRatePerPcs = model.FinalRatePerPcs
                 };
 
                 await _dbContext.QuotationMaster.AddAsync(quotation);
@@ -183,6 +226,15 @@ namespace Erp.Repository.Implementation.Production
                 if (details.Count > 0)
                 {
                     await _dbContext.QuotationDetails.AddRangeAsync(details);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                var charges = (model.Quotation_Charges ?? new List<QuotationChargeDTO>())
+                    .Select(charge => CreateCharge(charge, model.Quotation_Id, model.CreatedBy, now))
+                    .ToList();
+                if (charges.Count > 0)
+                {
+                    await _dbContext.QuotationCharges.AddRangeAsync(charges);
                     await _dbContext.SaveChangesAsync();
                 }
 
@@ -231,6 +283,12 @@ namespace Erp.Repository.Implementation.Production
                 quotation.Validity_Days = model.Validity_Days;
                 quotation.Valid_Until = model.Quotation_Date?.Date.AddDays(model.Validity_Days);
                 quotation.Remarks = model.Remarks;
+                quotation.ProfitPercentage = model.ProfitPercentage;
+                quotation.Total = model.Total;
+                quotation.OverHeads = model.OverHeads;
+                quotation.PcsPerRate = model.PcsPerRate;
+                quotation.OverRate = model.OverRate;
+                quotation.FinalRatePerPcs = model.FinalRatePerPcs;
 
                 var existingDetails = await _dbContext.QuotationDetails
                     .Where(detail => detail.Quotation_Id == model.Quotation_Id && detail.DeletedAt == null)
@@ -274,6 +332,55 @@ namespace Erp.Repository.Implementation.Production
                     existingDetail.Remarks = detail.Remarks;
                     existingDetail.UpdatedBy = updatedBy;
                     existingDetail.UpdatedAt = now;
+                }
+
+                if (model.Quotation_Charges != null)
+                {
+                    var existingCharges = await _dbContext.QuotationCharges
+                        .Where(charge => charge.Quotation_Id == model.Quotation_Id)
+                        .ToListAsync();
+                    var existingChargesById = existingCharges.ToDictionary(charge => charge.Quotation_Charge_Id);
+                    var retainedChargeIds = model.Quotation_Charges
+                        .Where(charge => charge.Quotation_Charge_Id != Guid.Empty)
+                        .Select(charge => charge.Quotation_Charge_Id)
+                        .ToHashSet();
+
+                    foreach (var existingCharge in existingCharges.Where(charge =>
+                                 charge.DeletedAt == null && !retainedChargeIds.Contains(charge.Quotation_Charge_Id)))
+                    {
+                        existingCharge.DeletedBy = updatedBy;
+                        existingCharge.DeletedAt = now;
+                    }
+
+                    foreach (var charge in model.Quotation_Charges)
+                    {
+                        var existingId = charge.Quotation_Charge_Id;
+                        if (existingId == Guid.Empty)
+                        {
+                            await _dbContext.QuotationCharges.AddAsync(CreateCharge(
+                                charge,
+                                model.Quotation_Id,
+                                updatedBy,
+                                now));
+                            continue;
+                        }
+
+                        if (!existingChargesById.TryGetValue(existingId, out var existingCharge))
+                        {
+                            throw new KeyNotFoundException("Quotation charge record not found.");
+                        }
+
+                        existingCharge.Charge_Id = charge.Charge_Id;
+                        existingCharge.AddLessType = charge.AddLessType;
+                        existingCharge.RateType = charge.RateType;
+                        existingCharge.Percentage = charge.Percentage;
+                        existingCharge.Amount = charge.Amount;
+                        existingCharge.Remarks = charge.Remarks;
+                        existingCharge.UpdatedBy = updatedBy;
+                        existingCharge.UpdatedAt = now;
+                        existingCharge.DeletedBy = null;
+                        existingCharge.DeletedAt = null;
+                    }
                 }
 
                 await _dbContext.SaveChangesAsync();
@@ -327,6 +434,14 @@ namespace Erp.Repository.Implementation.Production
                     _dbContext.QuotationDetails.RemoveRange(details);
                 }
 
+                var charges = await _dbContext.QuotationCharges
+                    .Where(charge => charge.Quotation_Id == quotationId)
+                    .ToListAsync();
+                if (charges.Any())
+                {
+                    _dbContext.QuotationCharges.RemoveRange(charges);
+                }
+
                 // ============================
                 // Delete Quotation Master
                 // ============================
@@ -372,6 +487,29 @@ namespace Erp.Repository.Implementation.Production
                 Rate = detail.Rate,
                 AppRate = detail.AppRate,
                 Remarks = detail.Remarks,
+                CreatedBy = createdBy,
+                CreatedAt = createdAt
+            };
+        }
+
+        private static QuotationChargeDTO CreateCharge(
+            QuotationChargeDTO charge,
+            Guid quotationId,
+            string? createdBy,
+            DateTime createdAt)
+        {
+            return new QuotationChargeDTO
+            {
+                Quotation_Charge_Id = charge.Quotation_Charge_Id == Guid.Empty
+                    ? Guid.NewGuid()
+                    : charge.Quotation_Charge_Id,
+                Quotation_Id = quotationId,
+                Charge_Id = charge.Charge_Id,
+                AddLessType = charge.AddLessType,
+                RateType = charge.RateType,
+                Percentage = charge.Percentage,
+                Amount = charge.Amount,
+                Remarks = charge.Remarks,
                 CreatedBy = createdBy,
                 CreatedAt = createdAt
             };

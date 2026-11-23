@@ -62,6 +62,8 @@ namespace Erp.Repository.Data
         public DbSet<ProductionCostChargeDTO> ProductionCostCharges { get; set; }
         public DbSet<ProductionCostScreeningDTO> ProductionCostScreening { get; set; }
         public DbSet<ProductionCostListDTO> ProductionCostList { get; set; }
+        public DbSet<MontlyExpensesDTO> MontlyExpenses { get; set; }
+        public DbSet<MontlyExpensesDetailDTO> MontlyExpensesDetails { get; set; }
         public DbSet<DespatchDTO> Despatch { get; set; }
         public DbSet<PaymentVoucherDTO> PaymentVoucher { get; set; }
         public DbSet<BillingMasterDTO> BillingMaster { get; set; }
@@ -76,6 +78,7 @@ namespace Erp.Repository.Data
         public DbSet<PurchaseSupplierOutstandingDTO> PurchaseSupplierOutstanding { get; set; }
         public DbSet<QuotationMasterDTO> QuotationMaster { get; set; }
         public DbSet<QuotationDetailDTO> QuotationDetails { get; set; }
+        public DbSet<QuotationChargeDTO> QuotationCharges { get; set; }
         public DbSet<IssueMasterDTO> IssueMaster { get; set; }
         public DbSet<IssueDetailDTO> IssueDetails { get; set; }
         public DbSet<IssueStockAllocationDTO> IssueStockAllocations { get; set; }
@@ -124,6 +127,7 @@ namespace Erp.Repository.Data
             modelBuilder.Entity<StyleDTO>();
             modelBuilder.Entity<QuotationMasterDTO>();
             modelBuilder.Entity<QuotationDetailDTO>();
+            modelBuilder.Entity<QuotationChargeDTO>();
             modelBuilder.Entity<IssueMasterDTO>();
             modelBuilder.Entity<IssueDetailDTO>();
             modelBuilder.Entity<IssueStockAllocationDTO>();

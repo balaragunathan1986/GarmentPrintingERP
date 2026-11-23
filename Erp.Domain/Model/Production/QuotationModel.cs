@@ -23,6 +23,13 @@ namespace Erp.Domain.Model.Production
         public Guid? Converted_Invoice_Id { get; set; }
         public DateTime? Converted_Date { get; set; }
         public string? Remarks { get; set; }
+        public decimal? ProfitPercentage { get; set; }
+        public decimal? Total { get; set; }
+        public decimal? OverHeads { get; set; }
+        public decimal? PcsPerRate { get; set; }
+        public decimal? OverRate { get; set; }
+        public decimal? FinalRatePerPcs { get; set; }
         public List<QuotationDetailDTO> Quotation_Details { get; set; } = new();
+        public List<QuotationChargeDTO>? Quotation_Charges { get; set; }
     }
 }

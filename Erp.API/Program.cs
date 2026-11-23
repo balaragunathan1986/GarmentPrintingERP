@@ -146,6 +146,7 @@ builder.Services.AddTransient<IProductionBatchService, ProductionBatchService>()
 builder.Services.AddTransient<IMontlyReportService, MontlyReportService>();
 builder.Services.AddTransient<IPurchaseSupplierOutstandingService, PurchaseSupplierOutstandingService>();
 builder.Services.AddTransient<IProductionCostService, ProductionCostService>();
+builder.Services.AddTransient<IMontlyExpensesService, MontlyExpensesService>();
 builder.Services.AddTransient<IDespatchService, DespatchService>();
 builder.Services.AddTransient<IPaymentVoucherService, PaymentVoucherService>();
 builder.Services.AddTransient<IBillingService, BillingService>();
@@ -192,6 +193,7 @@ builder.Services.AddTransient<IProductionBatchRepository, ProductionBatchReposit
 builder.Services.AddTransient<IMontlyReportRepository, MontlyReportRepository>();
 builder.Services.AddTransient<IPurchaseSupplierOutstandingRepository, PurchaseSupplierOutstandingRepository>();
 builder.Services.AddTransient<IProductionCostRepository, ProductionCostRepository>();
+builder.Services.AddTransient<IMontlyExpensesRepository, MontlyExpensesRepository>();
 builder.Services.AddTransient<IDespatchRepository, DespatchRepository>();
 builder.Services.AddTransient<IPaymentVoucherRepository, PaymentVoucherRepository>();
 builder.Services.AddTransient<IBillingRepository, BillingRepository>();

@@ -1999,3 +1999,142 @@ BEGIN
 
 END
 GO
+
+alter table Quotation_Master add [ProfitPercentage] [numeric](5, 2)  NULL
+alter table Quotation_Master add [Total] [numeric](15, 2)  NULL
+alter table Quotation_Master add [OverHeads] [numeric](15, 2)  NULL
+alter table Quotation_Master add [PcsPerRate] [numeric](15, 2)  NULL
+alter table Quotation_Master add [OverRate] [numeric](15, 2)  NULL
+alter table Quotation_Master add [FinalRatePerPcs] [numeric](15, 2)  NULL
+
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'MontlyExpenses_Master'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].MontlyExpenses_Master
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        -- Business Identifier
+        [MontlyExpenses_Id] UNIQUEIDENTIFIER NOT NULL,
+        -- Billing Number
+        [MontlyExpenses_Number] NVARCHAR(15) NOT NULL,
+		        -- MontlyExpenses Date
+        [MontlyExpenses] DATETIME NOT NULL
+            DEFAULT GETDATE(),
+        -- Company
+        [Company_Id] INT NOT NULL,
+        -- style
+        [StyleId] UNIQUEIDENTIFIER NULL,
+
+        [JobOrder_Id] UNIQUEIDENTIFIER NULL,
+
+        -- Audit Fields
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+		Remarks NVARCHAR(500) NULL,
+
+        -- Primary Key
+        CONSTRAINT [PK_MontlyExpenses_Master]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        -- Business ID
+        CONSTRAINT [UQ_MontlyExpenses_Master_Id]
+            UNIQUE ([MontlyExpenses_Id]),
+
+        -- Company FK
+        CONSTRAINT [FK_MontlyExpenses_Master_Company]
+            FOREIGN KEY ([Company_Id])
+            REFERENCES [dbo].[Company]([Id]),
+
+			    -- Style FK
+        CONSTRAINT [FK_MontlyExpenses_Master_Style]
+            FOREIGN KEY ([StyleId])
+            REFERENCES [dbo].[Style]([StyleId]),
+
+        -- joborder FK
+        CONSTRAINT [FK_MontlyExpenses_Master_JobOrderMaster]
+            FOREIGN KEY ([JobOrder_Id])
+            REFERENCES [dbo].[JobOrder_Master]([JobOrder_Id])
+    );
+
+END;
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.objects
+    WHERE name = 'MontlyExpenses_Details'
+      AND type = 'U'
+)
+BEGIN
+
+    CREATE TABLE [dbo].MontlyExpenses_Details
+    (
+        -- Primary Key
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        -- Business Identifier
+     
+	    [MontlyExpenses_Details_Id] UNIQUEIDENTIFIER NOT NULL,     
+
+        [Charge_Id] UNIQUEIDENTIFIER NOT NULL,
+		
+        [MontlyExpenses_Id] UNIQUEIDENTIFIER NOT NULL,
+		      -- Add / Less Type
+        [AddLessType] CHAR(1) NOT NULL,
+
+        [Percentage] NUMERIC(5, 2) NOT NULL,
+
+        [Amount] NUMERIC(12, 2) NOT NULL,
+
+        [Remarks] NVARCHAR(1000) NULL,
+
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+
+        [CreatedAt] DATETIME NULL,
+
+        [UpdatedBy] NVARCHAR(100) NULL,
+
+        [UpdatedAt] DATETIME NULL,
+
+        [DeletedBy] NVARCHAR(100) NULL,
+
+        [DeletedAt] DATETIME NULL,
+
+        CONSTRAINT [PK_MontlyExpenses_Details]
+            PRIMARY KEY CLUSTERED ([Id]),
+
+        CONSTRAINT [UQ_MontlyExpenses_Details_Id]
+            UNIQUE ([MontlyExpenses_Details_Id]),
+
+        CONSTRAINT [FK_MontlyExpenses_master_Charge]
+            FOREIGN KEY ([MontlyExpenses_Id])
+            REFERENCES [dbo].[MontlyExpenses_Master]([MontlyExpenses_Id]),
+
+		CONSTRAINT [FK_MontlyExpenses_Charge]
+            FOREIGN KEY (Charge_Id)
+            REFERENCES [dbo].[Charge]([Charge_Id]),
+
+        CONSTRAINT [UQ_MontlyExpenses_Charge]
+            UNIQUE ([MontlyExpenses_Id], [Charge_Id])
+    );
+
+END;
