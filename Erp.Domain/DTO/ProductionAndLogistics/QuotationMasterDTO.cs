@@ -16,6 +16,9 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public int Supplier_Id { get; set; }
         public Guid? Style_Id { get; set; }
         public DateTime? Quotation_Date { get; set; }
+        public string? PrintQuality { get; set; }
+        public string? Grade { get; set; }
+        public decimal? NoofColours { get; set; }
         public bool? Commit { get; set; }
         public bool? Cancel { get; set; }
         public int? ApprovedBy { get; set; }

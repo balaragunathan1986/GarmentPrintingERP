@@ -44,6 +44,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = quotation.Supplier_Id,
                     Style_Id = quotation.Style_Id,
                     Quotation_Date = quotation.Quotation_Date,
+                    PrintQuality = quotation.PrintQuality,
+                    Grade = quotation.Grade,
+                    NoofColours = quotation.NoofColours,
                     Commit = quotation.Commit,
                     Cancel = quotation.Cancel,
                     CreatedBy = quotation.CreatedBy,
@@ -88,6 +91,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = master.Supplier_Id,
                     Style_Id = master.Style_Id,
                     Quotation_Date = master.Quotation_Date,
+                    PrintQuality = master.PrintQuality,
+                    Grade = master.Grade,
+                    NoofColours = master.NoofColours,
                     Commit = master.Commit,
                     Cancel = master.Cancel,
                     CreatedBy = master.CreatedBy,
@@ -198,6 +204,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = model.Supplier_Id,
                     Style_Id = model.Style_Id,
                     Quotation_Date = model.Quotation_Date,
+                    PrintQuality = model.PrintQuality,
+                    Grade = model.Grade,
+                    NoofColours = model.NoofColours,
                     Commit = model.Commit,
                     Cancel = model.Cancel,
                     CreatedBy = model.CreatedBy,
@@ -273,6 +282,9 @@ namespace Erp.Repository.Implementation.Production
                 quotation.Supplier_Id = model.Supplier_Id;
                 quotation.Style_Id = model.Style_Id;
                 quotation.Quotation_Date = model.Quotation_Date;
+                quotation.PrintQuality = model.PrintQuality;
+                quotation.Grade = model.Grade;
+                quotation.NoofColours = model.NoofColours;
                 quotation.Commit = model.Commit;
                 quotation.Cancel = model.Cancel;
                 quotation.UpdatedBy = model.UpdatedBy;
