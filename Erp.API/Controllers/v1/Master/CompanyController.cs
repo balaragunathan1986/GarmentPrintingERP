@@ -197,11 +197,11 @@ namespace Erp.API.Controllers.v1.Master
                 return;
             }
 
-            var filePath = Path.Combine(GetLogoDirectory(), fileName);
-            if (System.IO.File.Exists(filePath))
-            {
-                System.IO.File.Delete(filePath);
-            }
+            //var filePath = Path.Combine(GetLogoDirectory(), fileName);
+            //if (System.IO.File.Exists(filePath))
+            //{
+            //    System.IO.File.Delete(filePath);
+            //}
         }
 
         private static bool IsSupportedLogo(IFormFile logo, string extension)

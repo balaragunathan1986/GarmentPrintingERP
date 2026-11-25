@@ -2138,3 +2138,7 @@ BEGIN
     );
 
 END;
+
+
+ALTER TABLE [dbo].[Company]
+ADD [CompanyLogoPath] NVARCHAR(500) NULL;
