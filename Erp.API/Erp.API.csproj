@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Folder Include="Controllers\v1\Reports\" />
+    <Folder Include="wwwroot\uploads\company-logos\" />
   </ItemGroup>
 
 
