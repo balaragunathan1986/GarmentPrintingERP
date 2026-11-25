@@ -82,14 +82,14 @@ namespace Erp.Repository.Implementation.Account
                 if (user.FailedLoginAttempts >= 5)
                 {
                     user.IsLocked = true;
-                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(10);
 
                     await _dbcontext.SaveChangesAsync();
 
                     return new
                     {
                         success = false,
-                        message = "Too many failed login attempts. Account locked for 2 minutes."
+                        message = "Too many failed login attempts. Account locked for 10 minutes."
                     };
                 }
 
