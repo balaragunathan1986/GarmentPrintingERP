@@ -13,6 +13,7 @@ namespace Erp.API.Controllers.v1.Production
     public class InvoiceController : ControllerBase
     {
         private static readonly string[] ApprovalStatuses = ["Pending", "Approved", "Rejected", "Cancelled"];
+        private static readonly string[] InvoiceTypes = ["O", "G", "Q"];
         private readonly IInvoiceService _invoiceService;
         private readonly ILogger<InvoiceController> _logger;
 
@@ -182,19 +183,24 @@ namespace Erp.API.Controllers.v1.Production
                 return "ApprovalStatus must be Pending, Approved, Rejected, or Cancelled.";
             }
 
-            if (invoice.Invoice_Source is not ("Manual" or "Quotation"))
+            if (invoice.InvoiceType != null && !InvoiceTypes.Contains(invoice.InvoiceType, StringComparer.Ordinal))
             {
-                return "Invoice_Source must be Manual or Quotation.";
+                return "InvoiceType must be O, G, or Q.";
+            }
+
+            if (invoice.Invoice_Source is not ("Manual" or "Quotation" or "GoodReceipt"))
+            {
+                return "Invoice_Source must be Manual, Quotation, or GoodReceipt.";
             }
 
             if ((invoice.Invoice_Source == "Quotation" && (!invoice.Quotation_Id.HasValue || invoice.Quotation_Id == Guid.Empty))
-                || (invoice.Invoice_Source == "Manual" && invoice.Quotation_Id.HasValue))
+                || (invoice.Invoice_Source != "Quotation" && invoice.Quotation_Id.HasValue))
             {
-                return "Quotation_Id is required for quotation invoices and must be null for manual invoices.";
+                return "Quotation_Id is required for quotation invoices and must be null for other invoice sources.";
             }
 
             if (invoice.Details.Any(detail =>
-                    detail.InwardQty < 0 || detail.OutwardQty < 0 || detail.Rate < 0))
+                    detail.InwardQty < 0 || detail.OutwardQty < 0 || detail.InvoiceQty < 0 || detail.Rate < 0))
             {
                 return "Invoice quantities and rates cannot be negative.";
             }

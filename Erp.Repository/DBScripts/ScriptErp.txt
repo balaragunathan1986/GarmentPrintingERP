@@ -2146,3 +2146,12 @@ ADD [CompanyLogoPath] NVARCHAR(500) NULL;
 
 ALTER TABLE [dbo].[Quotation_Master]
 ADD [QuotationImagePath] NVARCHAR(500) NULL;
+
+
+IF COL_LENGTH('dbo.Invoice_Master', 'InvoiceType') IS NULL
+    ALTER TABLE dbo.Invoice_Master ADD InvoiceType VARCHAR(1) NULL;
+GO
+
+IF COL_LENGTH('dbo.Invoice_Detail', 'InvoiceQty') IS NULL
+    ALTER TABLE dbo.Invoice_Detail ADD InvoiceQty NUMERIC(15, 2) NULL;
+GO

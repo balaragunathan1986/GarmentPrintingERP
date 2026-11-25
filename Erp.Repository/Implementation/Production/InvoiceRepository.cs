@@ -55,6 +55,7 @@ namespace Erp.Repository.Implementation.Production
                     NetAmount = invoice.NetAmount,
                     ApprovalStatus = invoice.ApprovalStatus,
                     Invoice_Source = invoice.Invoice_Source,
+                    InvoiceType = invoice.InvoiceType,
                     Quotation_Id = invoice.Quotation_Id
                 };
 
@@ -89,6 +90,7 @@ namespace Erp.Repository.Implementation.Production
                     ApprovedDate = master.ApprovedDate,
                     ApprovalStatus = master.ApprovalStatus,
                     Invoice_Source = master.Invoice_Source,
+                    InvoiceType = master.InvoiceType,
                     Quotation_Id = master.Quotation_Id
                 }).FirstOrDefaultAsync();
 
@@ -125,6 +127,7 @@ namespace Erp.Repository.Implementation.Production
                     SizeName = size.Size_Name ?? string.Empty,
                     InwardQty = detail.InwardQty,
                     OutwardQty = detail.OutwardQty,
+                    InvoiceQty = detail.InvoiceQty,
                     Rate = detail.Rate,
                     Amount = detail.Amount,
                     Remarks = detail.Remarks
@@ -176,6 +179,7 @@ namespace Erp.Repository.Implementation.Production
                     ApprovedDate = model.ApprovedDate,
                     ApprovalStatus = model.ApprovalStatus,
                     Invoice_Source = model.Invoice_Source,
+                    InvoiceType = model.InvoiceType,
                     Quotation_Id = model.Quotation_Id
                 };
 
@@ -245,6 +249,7 @@ namespace Erp.Repository.Implementation.Production
                 invoice.ApprovedBy = model.ApprovedBy;
                 invoice.ApprovedDate = model.ApprovedDate;
                 invoice.ApprovalStatus = model.ApprovalStatus;
+                invoice.InvoiceType = model.InvoiceType;
 
                 await ReplaceDetails(invoice.Invoice_Id, model.Details ?? new(), model.UpdatedBy, now);
                 await ReplaceCharges(invoice.Invoice_Id, model.Charges ?? new(), model.UpdatedBy, now);
@@ -493,6 +498,7 @@ namespace Erp.Repository.Implementation.Production
                 detail.Size_ID = item.Size_ID;
                 detail.InwardQty = item.InwardQty;
                 detail.OutwardQty = item.OutwardQty;
+                detail.InvoiceQty = item.InvoiceQty;
                 detail.Rate = item.Rate;
                 detail.Remarks = item.Remarks;
                 detail.UpdatedBy = auditUser;
