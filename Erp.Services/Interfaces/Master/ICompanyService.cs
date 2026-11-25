@@ -14,6 +14,7 @@ namespace Erp.Services.Interfaces.Master
         Task<CompanyDTO> GetCompany(Guid Company_Id);
         Task<CompanyDTO> Save(CompanyDTO Company);
         Task<CompanyDTO> Update(CompanyDTO Company);
+        Task<bool> UpdateLogoPath(Guid Company_Id, string? CompanyLogoPath);
         Task<bool> Delete(Guid Company_Id);
     }
 }

@@ -231,6 +231,7 @@ app.UseHttpsRedirection();
 
 //  ✅ Important: enable authentication before authorization
 app.UseCors("AllowCORS");
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 

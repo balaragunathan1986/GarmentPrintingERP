@@ -33,6 +33,10 @@ namespace Erp.Services.Implementation.Master
         {
             return await _companyRepository.Update(Company);   
         }
+        public async Task<bool> UpdateLogoPath(Guid Company_Id, string? CompanyLogoPath)
+        {
+            return await _companyRepository.UpdateLogoPath(Company_Id, CompanyLogoPath);
+        }
         public async Task<bool> Delete(Guid Company_Id)
         {
             return await _companyRepository.Delete(Company_Id);
