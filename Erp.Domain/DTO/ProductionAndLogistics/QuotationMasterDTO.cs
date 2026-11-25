@@ -35,6 +35,7 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         [JsonPropertyName("convertedDate")]
         public DateTime? Converted_Date { get; set; }
         public string? Remarks { get; set; }
+        public string? QuotationImagePath { get; set; }
         public decimal? ProfitPercentage { get; set; }
         public decimal? Total { get; set; }
         public decimal? OverHeads { get; set; }

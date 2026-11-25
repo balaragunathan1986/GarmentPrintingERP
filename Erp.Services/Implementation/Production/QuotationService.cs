@@ -29,6 +29,9 @@ namespace Erp.Services.Implementation.Production
         public async Task<QuotationMasterDTO> Update(QuotationModel model)
             => await _quotationRepository.Update(model);
 
+        public async Task<bool> UpdateImagePath(Guid quotationId, string? imagePath)
+            => await _quotationRepository.UpdateImagePath(quotationId, imagePath);
+
         public async Task<bool> Delete(Guid quotationId, string? deletedBy)
             => await _quotationRepository.Delete(quotationId, deletedBy);
     }

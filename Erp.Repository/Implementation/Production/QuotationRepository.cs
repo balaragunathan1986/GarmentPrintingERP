@@ -64,6 +64,7 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = quotation.Converted_Invoice_Id,
                     Converted_Date = quotation.Converted_Date,
                     Remarks = quotation.Remarks,
+                    QuotationImagePath = quotation.QuotationImagePath,
                     ProfitPercentage = quotation.ProfitPercentage,
                     Total = quotation.Total,
                     OverHeads = quotation.OverHeads,
@@ -111,6 +112,7 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = master.Converted_Invoice_Id,
                     Converted_Date = master.Converted_Date,
                     Remarks = master.Remarks,
+                    QuotationImagePath = master.QuotationImagePath,
                     ProfitPercentage = master.ProfitPercentage,
                     Total = master.Total,
                     OverHeads = master.OverHeads,
@@ -479,6 +481,22 @@ namespace Erp.Repository.Implementation.Production
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<bool> UpdateImagePath(Guid quotationId, string? imagePath)
+        {
+            var quotation = await _dbContext.QuotationMaster.FirstOrDefaultAsync(item =>
+                item.Quotation_Id == quotationId && item.DeletedAt == null);
+
+            if (quotation == null)
+            {
+                return false;
+            }
+
+            quotation.QuotationImagePath = imagePath;
+            quotation.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            return true;
         }
 
         private static QuotationDetailDTO CreateDetail(

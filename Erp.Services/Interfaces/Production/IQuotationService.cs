@@ -10,6 +10,7 @@ namespace Erp.Services.Interfaces.Production
         Task<QuotationMasterDTO> GetQuotation(Guid quotationId);
         Task<QuotationMasterDTO> Save(QuotationModel model);
         Task<QuotationMasterDTO> Update(QuotationModel model);
+        Task<bool> UpdateImagePath(Guid quotationId, string? imagePath);
         Task<bool> Delete(Guid quotationId, string? deletedBy);
     }
 }
