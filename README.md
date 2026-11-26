@@ -7,6 +7,12 @@ Before deploying the invoice/quotation conversion changes, run
 `Erp.Repository\DBScripts\InvoiceQuotationConversion.sql` against the existing SQL Server database.
 The script adds the master fields and permits invoice details without outward references.
 
+Before deploying good-receipt invoices, ensure the purchase-receipt tables have been created by
+`Erp.Repository\DBScripts\PurchaseReceipt.sql`, then run
+`Erp.Repository\DBScripts\InvoicePurchaseReceipt.sql` against the database. The invoice detail
+table gains nullable purchase-receipt references; good-receipt (`InvoiceType: "G"`) details are
+saved with null `Outward_ID` and `OutwardDetail_Id`.
+
 Use `Invoice_Source: "Quotation"` and a non-empty `Quotation_Id` when creating an invoice
 from a quotation; manual invoices use `Invoice_Source: "Manual"` and a null `Quotation_Id`.
 Quotation invoice details are saved with null `Outward_ID` and `OutwardDetail_Id`, regardless
