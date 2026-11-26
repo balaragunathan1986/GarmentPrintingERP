@@ -2155,3 +2155,20 @@ GO
 IF COL_LENGTH('dbo.Invoice_Detail', 'InvoiceQty') IS NULL
     ALTER TABLE dbo.Invoice_Detail ADD InvoiceQty NUMERIC(15, 2) NULL;
 GO
+
+
+
+alter table Invoice_Detail add PurchaseReceipt_Detail_Id  [uniqueidentifier] NULL
+
+alter table Invoice_Detail add PurchaseReceipt_Id  [uniqueidentifier] NULL
+
+
+
+ALTER TABLE [dbo].[Invoice_Detail]  WITH CHECK ADD  CONSTRAINT [FK_Invoice_Detail_PurchaseReceipt_Detail] FOREIGN KEY([PurchaseReceipt_Detail_Id])
+REFERENCES [dbo].[PurchaseReceipt_Detail] ([PurchaseReceipt_Detail_Id])
+GO
+
+
+ALTER TABLE [dbo].[Invoice_Detail]  WITH CHECK ADD  CONSTRAINT [FK_Invoice_Detail_PurchaseReceipt_Master] FOREIGN KEY([PurchaseReceipt_Id])
+REFERENCES [dbo].[PurchaseReceipt_Master] ([PurchaseReceipt_Id])
+GO

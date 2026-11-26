@@ -99,6 +99,7 @@ namespace Erp.Repository.Implementation.Production
                 return null;
             }
 
+            var isGoodReceiptInvoice = invoice.InvoiceType == "G";
             invoice.Details = await (
                 from detail in _dbContext.InvoiceDetails.AsNoTracking()
                 join outward in _dbContext.Outward.AsNoTracking()
@@ -116,8 +117,14 @@ namespace Erp.Repository.Implementation.Production
                     InvoiceDetailID = detail.InvoiceDetailID,
                     InvoiceDetail_Id = detail.InvoiceDetail_Id,
                     Invoice_Id = detail.Invoice_Id,
-                    Outward_ID = detail.Outward_ID,
-                    OutwardDetail_Id = detail.OutwardDetail_Id,
+                    Outward_ID = isGoodReceiptInvoice
+                        ? detail.PurchaseReceipt_Id
+                        : detail.Outward_ID,
+                    OutwardDetail_Id = isGoodReceiptInvoice
+                        ? detail.PurchaseReceipt_Detail_Id
+                        : detail.OutwardDetail_Id,
+                    PurchaseReceipt_Detail_Id = detail.PurchaseReceipt_Detail_Id,
+                    PurchaseReceipt_Id = detail.PurchaseReceipt_Id,
                     OutwardNo = outward == null ? string.Empty : outward.OutwardNo,
                     Item_ID = detail.Item_ID,
                     ItemName = item.Item_Name,
@@ -358,6 +365,19 @@ namespace Erp.Repository.Implementation.Production
 
         private async Task PrepareOutwardReferences(InvoiceMasterDTO invoice)
         {
+            if (invoice.InvoiceType == "G")
+            {
+                foreach (var detail in invoice.Details)
+                {
+                    detail.PurchaseReceipt_Detail_Id =
+                        detail.OutwardDetail_Id ?? detail.PurchaseReceipt_Detail_Id;
+                    detail.PurchaseReceipt_Id = detail.Outward_ID ?? detail.PurchaseReceipt_Id;
+                    detail.Outward_ID = null;
+                    detail.OutwardDetail_Id = null;
+                }
+                return;
+            }
+
             if (invoice.Invoice_Source == "Quotation")
             {
                 foreach (var detail in invoice.Details)
@@ -493,6 +513,8 @@ namespace Erp.Repository.Implementation.Production
 
                 detail.Outward_ID = item.Outward_ID;
                 detail.OutwardDetail_Id = item.OutwardDetail_Id;
+                detail.PurchaseReceipt_Detail_Id = item.PurchaseReceipt_Detail_Id;
+                detail.PurchaseReceipt_Id = item.PurchaseReceipt_Id;
                 detail.Item_ID = item.Item_ID;
                 detail.Color_ID = item.Color_ID;
                 detail.Size_ID = item.Size_ID;
