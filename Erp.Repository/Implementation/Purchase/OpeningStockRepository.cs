@@ -169,7 +169,7 @@ namespace Erp.Repository.Implementation.Purchase
             try
             {
                 var openingStocks = await _dbContext.OpeningStocks
-                    .Where(stock => stock.OpeningStock_Number == openingStockNumber && stock.DeletedAt == null)
+                    .Where(stock => stock.OpeningStock_Number == openingStockNumber)
                     .ToListAsync();
                 if (openingStocks.Count == 0)
                 {
@@ -183,8 +183,8 @@ namespace Erp.Repository.Implementation.Purchase
                 var stockDetails = await _dbContext.StockDetails
                     .Where(stock => stockIds.Contains(stock.Stock_Id))
                     .ToListAsync();
-                var now = DateTime.UtcNow;
 
+                var now = DateTime.UtcNow;
                 foreach (var openingStock in openingStocks)
                 {
                     openingStock.DeletedBy = deletedBy;
