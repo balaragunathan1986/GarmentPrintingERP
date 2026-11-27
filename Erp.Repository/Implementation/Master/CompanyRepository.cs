@@ -62,6 +62,20 @@ namespace Erp.Repository.Implementation.Master
 
         }
 
+        public async Task<bool> UpdateLogoPath(Guid Company_Id, string? CompanyLogoPath)
+        {
+            var company = await _dbcontext.Company.FirstOrDefaultAsync(
+                item => item.Company_Id == Company_Id && !item.IsDeleted);
+            if (company == null)
+            {
+                return false;
+            }
+
+            company.CompanyLogoPath = CompanyLogoPath;
+            await _dbcontext.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> Delete(Guid Company_Id)
         {
             var company = await _dbcontext.Company.FirstOrDefaultAsync(item => item.Company_Id == Company_Id && item.IsDeleted == false);

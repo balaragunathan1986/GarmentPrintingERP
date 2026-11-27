@@ -26,5 +26,6 @@ namespace Erp.Utility
       public static readonly string Payment = "PY";
       public static readonly string Purchase = "PU";
       public static readonly string PurchaseReceipt = "GR";
+      public static readonly string OpeningStock = "OS";
     }
 }

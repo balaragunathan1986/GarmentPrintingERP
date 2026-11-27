@@ -12,6 +12,9 @@ namespace Erp.Domain.Model.Production
         public int Supplier_Id { get; set; }
         public Guid? Style_Id { get; set; }
         public DateTime? Quotation_Date { get; set; }
+        public string? PrintQuality { get; set; }
+        public string? Grade { get; set; }
+        public decimal? NoofColours { get; set; }
         public bool? Commit { get; set; }
         public bool? Cancel { get; set; }
         public int? ApprovedBy { get; set; }
@@ -23,6 +26,7 @@ namespace Erp.Domain.Model.Production
         public Guid? Converted_Invoice_Id { get; set; }
         public DateTime? Converted_Date { get; set; }
         public string? Remarks { get; set; }
+        public string? QuotationImagePath { get; set; }
         public decimal? ProfitPercentage { get; set; }
         public decimal? Total { get; set; }
         public decimal? OverHeads { get; set; }

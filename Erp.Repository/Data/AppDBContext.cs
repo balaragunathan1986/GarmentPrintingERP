@@ -101,6 +101,7 @@ namespace Erp.Repository.Data
         public DbSet<PurchaseChargeDTO> PurchaseCharges { get; set; }
         public DbSet<PurchaseReceiptMasterDTO> PurchaseReceiptMaster { get; set; }
         public DbSet<PurchaseReceiptDetailDTO> PurchaseReceiptDetails { get; set; }
+        public DbSet<OpeningStockDTO> OpeningStocks { get; set; }
         public DbSet<StockDetailDTO> StockDetails { get; set; }
         #endregion
 
@@ -149,6 +150,7 @@ namespace Erp.Repository.Data
             modelBuilder.Entity<PurchaseChargeDTO>();
             modelBuilder.Entity<PurchaseReceiptMasterDTO>();
             modelBuilder.Entity<PurchaseReceiptDetailDTO>();
+            modelBuilder.Entity<OpeningStockDTO>();
             modelBuilder.Entity<StockDetailDTO>();
 
             modelBuilder.Entity<ProductionBatchListDTO>().HasNoKey();

@@ -31,6 +31,7 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public string ApprovalStatus { get; set; } = "Pending";
         [JsonPropertyName("invoiceSource")]
         public string Invoice_Source { get; set; } = "Manual";
+        public string? InvoiceType { get; set; }
         public Guid? Quotation_Id { get; set; }
 
         [NotMapped]
@@ -74,11 +75,14 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public Guid Invoice_Id { get; set; }
         public Guid? Outward_ID { get; set; }
         public Guid? OutwardDetail_Id { get; set; }
+        public Guid? PurchaseReceipt_Detail_Id { get; set; }
+        public Guid? PurchaseReceipt_Id { get; set; }
         public Guid Item_ID { get; set; }
         public Guid Color_ID { get; set; }
         public Guid Size_ID { get; set; }
         public decimal InwardQty { get; set; }
         public decimal OutwardQty { get; set; }
+        public decimal? InvoiceQty { get; set; }
         public decimal Rate { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
@@ -140,6 +144,7 @@ namespace Erp.Domain.DTO.ProductionAndLogistics
         public string ApprovalStatus { get; set; } = "Pending";
         [JsonPropertyName("invoiceSource")]
         public string Invoice_Source { get; set; } = "Manual";
+        public string? InvoiceType { get; set; }
         public Guid? Quotation_Id { get; set; }
     }
 }

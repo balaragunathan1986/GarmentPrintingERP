@@ -24,6 +24,7 @@ namespace Erp.Domain.DTO
         public string? Phone_Number { get; set; }
         public string? Email { get; set; }
         public string Gst_Number { get; set; } = string.Empty;
+        public string? CompanyLogoPath { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
 

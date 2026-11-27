@@ -163,6 +163,7 @@ builder.Services.AddTransient<IOutwardService, OutwardService>();
 builder.Services.AddTransient<IInvoiceService, InvoiceService>();
 builder.Services.AddTransient<IPaymentService, PaymentService>();
 builder.Services.AddTransient<IPurchaseService, PurchaseService>();
+builder.Services.AddTransient<IOpeningStockService, OpeningStockService>();
 builder.Services.AddTransient<IPurchaseReceiptService, PurchaseReceiptService>();
 #endregion
 
@@ -209,6 +210,7 @@ builder.Services.AddTransient<IOutwardRepository, OutwardRepository>();
 builder.Services.AddTransient<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddTransient<IPaymentRepository, PaymentRepository>();
 builder.Services.AddTransient<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddTransient<IOpeningStockRepository, OpeningStockRepository>();
 builder.Services.AddTransient<IPurchaseReceiptRepository, PurchaseReceiptRepository>();
 #endregion
 
@@ -234,6 +236,7 @@ app.UseStaticFiles();
 
 //  ✅ Important: enable authentication before authorization
 app.UseCors("AllowCORS");
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -82,14 +82,14 @@ namespace Erp.Repository.Implementation.Account
                 if (user.FailedLoginAttempts >= 5)
                 {
                     user.IsLocked = true;
-                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(10);
 
                     await _dbcontext.SaveChangesAsync();
 
                     return new
                     {
                         success = false,
-                        message = "Too many failed login attempts. Account locked for 2 minutes."
+                        message = "Too many failed login attempts. Account locked for 10 minutes."
                     };
                 }
 
@@ -238,23 +238,24 @@ namespace Erp.Repository.Implementation.Account
         public async Task<List<UserPermissions>> GetUserPermissionsByRoleAsync(Guid role_id)
         {
             var permissions = await _dbcontext.UserPermissions.Where(permissions => permissions.Role_Id.Equals(role_id)).ToListAsync();
-            if (permissions.Count > 0)
-                return permissions;
-
             var ApplicationMenus = await _dbcontext.ApplicationMenus.ToListAsync();
-            ApplicationMenus.ForEach(item =>
+            return ApplicationMenus.Select(menu =>
             {
-                permissions.Add(new UserPermissions
+                var permission = permissions.FirstOrDefault(item => item.Menu_Id == menu.Menu_Id);
+                return new UserPermissions
                 {
                     Role_Id = role_id,
-                    Menu_Id = item.Menu_Id,
-                    Menu_Name = item.Menu_Name,
-                    Description = item.Description,
-                    isEnable = item.isEnable,
-
-                });
-            });
-            return permissions;
+                    Menu_Id = menu.Menu_Id,
+                    Menu_Name = menu.Menu_Name,
+                    Description = menu.Description,
+                    isEnable = permission?.isEnable ?? menu.isEnable,
+                    Id = permission?.Id ?? 0,
+                    CreatedBy = permission?.CreatedBy,
+                    CreatedAt = permission?.CreatedAt,
+                    UpdatedBy = permission?.UpdatedBy,
+                    UpdatedAt = permission?.UpdatedAt
+                };
+            }).ToList();
         }
         public async Task<bool> saveUserPermissionsAsync(List<UserPermissions> userPermissions, Guid user_Id)
         {
@@ -290,31 +291,36 @@ namespace Erp.Repository.Implementation.Account
         public async Task<bool> saveUserPermissionsByRoleAsync(List<UserPermissions> userPermissions, Guid role_Id)
         {
             var permissions = await _dbcontext.UserPermissions.Where(permissions => permissions.Role_Id.Equals(role_Id)).ToListAsync();
-            if (permissions.Count > 0)
+            var permissionsToAdd = new List<UserPermissions>();
+            foreach (var userPermission in userPermissions)
             {
-                permissions.ForEach(item =>
+                if (!userPermission.Menu_Id.HasValue)
                 {
-                    var userPermissionItem = userPermissions.FirstOrDefault(userItem => userItem.Id == item.Id && userItem.Menu_Id == item.Menu_Id);
-                    if (userPermissionItem != null)
-                    {
-                        item.Role_Id = role_Id;
-                        item.isEnable = userPermissionItem.isEnable;
-                        item.UpdatedBy = userPermissionItem.UpdatedBy;
-                        item.UpdatedAt = DateTime.Now;
-                    }
+                    throw new ArgumentException("Menu_Id is required for each permission.", nameof(userPermissions));
+                }
 
+                var existingPermission = permissions.FirstOrDefault(item => item.Menu_Id == userPermission.Menu_Id);
+                if (existingPermission != null)
+                {
+                    existingPermission.isEnable = userPermission.isEnable;
+                    existingPermission.UpdatedBy = userPermission.UpdatedBy;
+                    existingPermission.UpdatedAt = DateTime.Now;
+                    continue;
+                }
+
+                permissionsToAdd.Add(new UserPermissions
+                {
+                    Role_Id = role_Id,
+                    Menu_Id = userPermission.Menu_Id,
+                    Menu_Name = userPermission.Menu_Name,
+                    Description = userPermission.Description,
+                    isEnable = userPermission.isEnable,
+                    CreatedAt = DateTime.Now,
+                    CreatedBy = "Admin"
                 });
-                _dbcontext.UserPermissions.UpdateRange(permissions);
             }
-            else
-            {
-                userPermissions.ForEach(item => {
-                    item.Role_Id = role_Id;
-                    item.CreatedAt = DateTime.Now;
-                    item.CreatedBy = "Admin";
-                });
-                await _dbcontext.UserPermissions.AddRangeAsync(userPermissions);
-            }
+
+            await _dbcontext.UserPermissions.AddRangeAsync(permissionsToAdd);
             await _dbcontext.SaveChangesAsync();
             return true;
         }

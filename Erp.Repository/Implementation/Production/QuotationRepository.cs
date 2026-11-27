@@ -44,6 +44,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = quotation.Supplier_Id,
                     Style_Id = quotation.Style_Id,
                     Quotation_Date = quotation.Quotation_Date,
+                    PrintQuality = quotation.PrintQuality,
+                    Grade = quotation.Grade,
+                    NoofColours = quotation.NoofColours,
                     Commit = quotation.Commit,
                     Cancel = quotation.Cancel,
                     CreatedBy = quotation.CreatedBy,
@@ -61,6 +64,7 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = quotation.Converted_Invoice_Id,
                     Converted_Date = quotation.Converted_Date,
                     Remarks = quotation.Remarks,
+                    QuotationImagePath = quotation.QuotationImagePath,
                     ProfitPercentage = quotation.ProfitPercentage,
                     Total = quotation.Total,
                     OverHeads = quotation.OverHeads,
@@ -88,6 +92,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = master.Supplier_Id,
                     Style_Id = master.Style_Id,
                     Quotation_Date = master.Quotation_Date,
+                    PrintQuality = master.PrintQuality,
+                    Grade = master.Grade,
+                    NoofColours = master.NoofColours,
                     Commit = master.Commit,
                     Cancel = master.Cancel,
                     CreatedBy = master.CreatedBy,
@@ -105,6 +112,7 @@ namespace Erp.Repository.Implementation.Production
                     Converted_Invoice_Id = master.Converted_Invoice_Id,
                     Converted_Date = master.Converted_Date,
                     Remarks = master.Remarks,
+                    QuotationImagePath = master.QuotationImagePath,
                     ProfitPercentage = master.ProfitPercentage,
                     Total = master.Total,
                     OverHeads = master.OverHeads,
@@ -198,6 +206,9 @@ namespace Erp.Repository.Implementation.Production
                     Supplier_Id = model.Supplier_Id,
                     Style_Id = model.Style_Id,
                     Quotation_Date = model.Quotation_Date,
+                    PrintQuality = model.PrintQuality,
+                    Grade = model.Grade,
+                    NoofColours = model.NoofColours,
                     Commit = model.Commit,
                     Cancel = model.Cancel,
                     CreatedBy = model.CreatedBy,
@@ -273,6 +284,9 @@ namespace Erp.Repository.Implementation.Production
                 quotation.Supplier_Id = model.Supplier_Id;
                 quotation.Style_Id = model.Style_Id;
                 quotation.Quotation_Date = model.Quotation_Date;
+                quotation.PrintQuality = model.PrintQuality;
+                quotation.Grade = model.Grade;
+                quotation.NoofColours = model.NoofColours;
                 quotation.Commit = model.Commit;
                 quotation.Cancel = model.Cancel;
                 quotation.UpdatedBy = model.UpdatedBy;
@@ -467,6 +481,22 @@ namespace Erp.Repository.Implementation.Production
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<bool> UpdateImagePath(Guid quotationId, string? imagePath)
+        {
+            var quotation = await _dbContext.QuotationMaster.FirstOrDefaultAsync(item =>
+                item.Quotation_Id == quotationId && item.DeletedAt == null);
+
+            if (quotation == null)
+            {
+                return false;
+            }
+
+            quotation.QuotationImagePath = imagePath;
+            quotation.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            return true;
         }
 
         private static QuotationDetailDTO CreateDetail(
